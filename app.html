@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ميعاد | جرّب تذكيرات واتساب على جدولك</title>
+<meta name="description" content="الصق جدول مواعيدك من إكسل واطلع برسايل واتساب جاهزة لكل مريض. البيانات بتفضل على جهازك.">
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap bar">
+    <a class="brand" href="index.html" aria-label="ميعاد، الصفحة الرئيسية"><span class="mark" aria-hidden="true"></span>ميعاد</a>
+    <span class="tag warn">نسخة تجريبية</span>
+    <span class="privacy">البيانات بتفضل على جهازك. مفيش سيرفر ولا حساب.</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="sampleBanner" class="banner" hidden>دي بيانات تجريبية بأسماء وأرقام وهمية. امسحها والصق جدولك علشان تجرّب بجد.</div>
+
+  <section class="step" aria-labelledby="s1">
+    <h2 id="s1"><span class="n">١</span>هات جدول مواعيدك</h2>
+    <p class="hint">انسخ الأعمدة من إكسل أو شيتس والصقها هنا، أو ارفع ملف CSV. محتاج أعمدة: الاسم، الموبايل، التاريخ. والساعة والدكتور اختياريين.</p>
+    <textarea id="paste" rows="6" spellcheck="false" placeholder="الاسم	الموبايل	التاريخ	الساعة	الدكتور&#10;منى حسن	01000000001	27/11/2026	5 م	د. سارة"></textarea>
+    <div class="actions">
+      <button class="btn" id="btnParse" type="button">اقرا الجدول</button>
+      <label class="btn ghost" for="file" style="margin:0">ارفع ملف CSV</label>
+      <input type="file" id="file" accept=".csv,.tsv,.txt,text/csv" hidden>
+      <button class="btn ghost" id="btnSample" type="button">جرّب ببيانات تجريبية</button>
+      <button class="btn ghost" id="btnClear" type="button">امسح كل البيانات</button>
+    </div>
+    <div id="parseInfo" class="info" role="status" aria-live="polite"></div>
+  </section>
+
+  <section class="step" aria-labelledby="s2">
+    <h2 id="s2"><span class="n">٢</span>الرسالة</h2>
+    <div class="grid2">
+      <div><label for="clinic">اسم العيادة</label><input id="clinic" value="عيادة النور" autocomplete="off"></div>
+      <div><label for="fee">سعر الكشف بالجنيه (لحساب خسارة الغياب)</label><input id="fee" type="number" min="0" step="10" value="300" inputmode="numeric"></div>
+    </div>
+    <label for="tpl" style="margin-top:14px">نص الرسالة</label>
+    <textarea id="tpl" rows="5"></textarea>
+    <p class="hint">المتغيرات: {name} {clinic} {day} {time_part} {doctor_part}. <button type="button" class="linkbtn" id="btnTplReset">رجّع النص الافتراضي</button></p>
+    <div class="preview"><div class="pl">معاينة</div><div id="preview" class="bubble"></div></div>
+  </section>
+
+  <section class="step" aria-labelledby="s3">
+    <h2 id="s3"><span class="n">٣</span>مواعيد اليوم</h2>
+    <div class="daynav">
+      <button class="btn ghost small" id="prevDay" type="button" aria-label="اليوم السابق">اليوم اللي قبله</button>
+      <input type="date" id="day" aria-label="اختار اليوم">
+      <button class="btn ghost small" id="nextDay" type="button" aria-label="اليوم التالي">اليوم اللي بعده</button>
+      <button class="btn ghost small" id="goTomorrow" type="button">بكرة</button>
+    </div>
+    <div id="dayLabel" class="daylabel"></div>
+    <div id="chips" class="chips"></div>
+    <div id="list" class="list" role="table" aria-label="مواعيد اليوم"></div>
+    <p class="hint">كل زرار بيفتح واتساب برسالة جاهزة من رقمك، وانت اللي بتدوس إرسال. مفيش إرسال تلقائي ولا جماعي. ابعت بس لمرضى وافقوا يستقبلوا رسايل من العيادة.</p>
+  </section>
+
+  <section class="step" aria-labelledby="s4">
+    <h2 id="s4"><span class="n">٤</span>النتيجة على بياناتك</h2>
+    <p class="hint">بعد ما اليوم يعدّي، علّم كل ميعاد «حضر» أو «غاب». الصفحة بتقارن غياب اللي اتبعتلهم تذكير بغياب اللي ما اتبعتلهمش.</p>
+    <div id="results" class="results"></div>
+    <div class="actions"><button class="btn ghost" id="btnExport" type="button">نزّل الجدول بحالته (CSV)</button></div>
+  </section>
+</main>
+
+<footer class="foot"><div class="wrap">ميعاد أداة مساعدة، مش بديل لنظام عيادة كامل. مفيش نتايج مضمونة. <a href="index.html">رجوع للصفحة الرئيسية</a></div></footer>
+
+<script src="lib.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
