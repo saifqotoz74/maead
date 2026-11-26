@@ -14,11 +14,16 @@
   ['c-v', 'c-d', 'c-n', 'c-f', 'c-r'].forEach(function (id) { $(id).addEventListener('input', calc); });
   calc();
 
+  /* ?src=name on the link only adds a line to the message the visitor sends, so we know which post brought them. No cookies, no tracker. */
+  function srcLine() {
+    var m = /[?&]src=([\w-]{1,24})/.exec(location.search);
+    return m ? '\nجاي من: ' + m[1] : '';
+  }
   var num = (window.MAEAD_CONFIG || {}).whatsapp || '';
   var form = $('req'), note = $('q-note');
   form.addEventListener('submit', function (e) {
     e.preventDefault();
-    var msg = 'أهلاً، عايز أجهّز ميعاد لعيادتي.\nالاسم: ' + $('q-n').value + '\nالعيادة: ' + $('q-c').value + '\nالمواعيد دلوقتي: ' + $('q-t').value;
+    var msg = 'أهلاً، عايز أجهّز ميعاد لعيادتي.\nالاسم: ' + $('q-n').value + '\nالعيادة: ' + $('q-c').value + '\nالمواعيد دلوقتي: ' + $('q-t').value + srcLine();
     if (!num) {
       note.innerHTML = '<b>رقم الدعم لسه مش متاح، ومحدش هيستلم الطلب ده.</b> الأداة نفسها شغالة ومجانية: <a href="app.html#demo">جرّبها دلوقتي</a>. ولو عايز تحتفظ بالطلب، انسخه من هنا:<textarea id="q-copy" rows="4" readonly></textarea><button type="button" class="btn ghost small" id="q-copybtn">انسخ الطلب</button> <span id="q-copied" role="status"></span>';
       $('q-copy').value = msg;
