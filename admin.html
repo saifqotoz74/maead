@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>ميعاد | إدارة الأكواد</title>
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<main class="wrap" style="padding-top:24px;max-width:760px">
+  <h1>إدارة أكواد ميعاد</h1>
+  <p class="hint">للمالك بس. المفتاح بيتكتب هنا وبيفضل في الصفحة المفتوحة ومبيتحفظش. اقفل التبويب وخلاص.</p>
+  <label for="k">مفتاح الإدارة</label><input id="k" type="password" autocomplete="off" dir="ltr">
+  <h2>كود جديد (بعد ما العيادة تدفع)</h2>
+  <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div><label for="ic">اسم العيادة</label><input id="ic"></div>
+    <div><label for="ip">موبايل العيادة (اختياري)</label><input id="ip" inputmode="tel"></div>
+    <div><label for="id">عدد الأيام</label><input id="id" type="number" value="30" min="1" max="400"></div>
+    <div style="align-self:end"><button class="btn" id="bi" type="button">اطلع كود</button></div>
+  </div>
+  <h2>كود موجود</h2>
+  <div class="inl" style="display:flex;gap:8px;flex-wrap:wrap">
+    <input id="c" placeholder="MD-XXXX-XXXX" dir="ltr" style="flex:1;min-width:180px">
+    <input id="ed" type="number" value="30" min="1" max="400" style="width:90px" aria-label="أيام التمديد">
+    <button class="btn ghost" id="be" type="button">مدّد</button>
+    <button class="btn ghost" id="br" type="button">الغي</button>
+    <button class="btn ghost" id="bu" type="button">رجّع</button>
+  </div>
+  <p><button class="btn ghost" id="bl" type="button">اعرض آخر الأكواد</button></p>
+  <pre id="out" dir="ltr" style="white-space:pre-wrap;background:var(--sand);padding:14px;border-radius:var(--r);min-height:60px;overflow:auto"></pre>
+</main>
+<script src="config.js"></script>
+<script>
+(function(){
+  var $=function(i){return document.getElementById(i)};
+  function call(path,body,get){
+    var k=$('k').value.trim(); if(!k){$('out').textContent='اكتب المفتاح الأول.';return;}
+    $('out').textContent='...';
+    fetch(window.MAEAD_CONFIG.licenceApi+path,{method:get?'GET':'POST',headers:{'authorization':'Bearer '+k,'content-type':'application/json'},body:get?undefined:JSON.stringify(body||{})})
+      .then(function(r){return r.json().then(function(j){return [r.status,j]})})
+      .then(function(a){ $('out').textContent=a[0]===401?'المفتاح غلط.':JSON.stringify(a[1],null,2); })
+      .catch(function(){$('out').textContent='مفيش اتصال.';});
+  }
+  $('bi').onclick=function(){call('/admin/issue',{kind:'paid',days:+$('id').value,clinic:$('ic').value,phone:$('ip').value});};
+  $('be').onclick=function(){call('/admin/extend',{code:$('c').value,days:+$('ed').value});};
+  $('br').onclick=function(){call('/admin/revoke',{code:$('c').value});};
+  $('bu').onclick=function(){call('/admin/unrevoke',{code:$('c').value});};
+  $('bl').onclick=function(){call('/admin/list',null,true);};
+})();
+</script>
+</body>
+</html>
