@@ -15,7 +15,7 @@
 
   /* Egyptian mobile numbers: 010, 011, 012, 015 + 8 digits. */
   function normalizePhone(raw) {
-    var d = normDigits(raw).replace(/[^\d+]/g, '');
+    var d = normDigits(raw).replace(/\.0+$/, '').replace(/[^\d+]/g, '');
     if (!d) return { ok: false, reason: 'empty' };
     d = d.replace(/^\+/, '');
     if (d.indexOf('0020') === 0) d = d.slice(4);
@@ -38,6 +38,14 @@
   function parseDate(raw) {
     var s = normDigits(raw).trim();
     if (!s) return null;
+    /* Arabic month names: "27 نوفمبر 2026" becomes 27/11/2026. */
+    var MON = [['يناير|كانون الثاني',1],['فبراير|شباط',2],['مارس|آذار',3],['أبريل|ابريل|نيسان',4],['مايو|أيار',5],['يونيو|يونيه|حزيران',6],['يوليو|يوليه|تموز',7],['أغسطس|اغسطس|آب',8],['سبتمبر|أيلول',9],['أكتوبر|اكتوبر|تشرين الأول',10],['نوفمبر|تشرين الثاني',11],['ديسمبر|كانون الأول',12]];
+    for (var i = 0; i < MON.length; i++) {
+      var mm = s.match(new RegExp('(\\d{1,2})\\s*(?:' + MON[i][0] + ')\\s*(\\d{4})'));
+      if (mm) { s = mm[1] + '/' + MON[i][1] + '/' + mm[2]; break; }
+    }
+    /* Leading weekday or other words ("الجمعة 27/11/2026"): start at the first digit. */
+    var fd = s.search(/\d/); if (fd > 0) s = s.slice(fd);
     var m = s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/);
     var y, mo, d;
     if (m) { y = +m[1]; mo = +m[2]; d = +m[3]; }
@@ -63,7 +71,7 @@
     var am = /^(am|ص|صباحا|صباحاً)$/.test(suf);
     if (pm && h < 12) h += 12;
     if (am && h === 12) h = 0;
-    if (!pm && !am && h <= 7 && !m[3]) { /* bare "5" or "5:30" in clinic hours: assume afternoon */ h += 12; }
+    if (!pm && !am && h >= 1 && h <= 7 && !m[3]) { /* bare "5" or "5:30" in clinic hours: assume afternoon */ h += 12; }
     if (h === 24) h = 0;
     return pad(h) + ':' + pad(min);
   }

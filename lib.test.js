@@ -113,3 +113,11 @@ test('backup round trip and rejection of other files', () => {
   assert.strictEqual(M.parseBackup('{"a":1}', d).error, 'not_maead');
   assert.strictEqual(M.parseBackup(JSON.stringify({ app: 'maead', schema: 99, state: {} }), d).error, 'too_new');
 });
+
+test('weekday words, Arabic month names, midnight, Excel .0 phone', () => {
+  const L = require('./lib.js');
+  assert.strictEqual(L.parseDate('الجمعة 27/11/2026'), '2026-11-27');
+  assert.strictEqual(L.parseDate('27 نوفمبر 2026'), '2026-11-27');
+  assert.strictEqual(L.parseTime('0:30'), '00:30');
+  assert.strictEqual(L.normalizePhone('1012345678.0').e164, '201012345678');
+});
