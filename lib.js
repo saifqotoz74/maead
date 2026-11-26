@@ -245,7 +245,21 @@
     return w;
   }
 
+  /* ---- backup file: a JSON copy of the saved state, kept by the user ---- */
+  function makeBackup(state, nowISO) {
+    return JSON.stringify({ app: 'maead', schema: SCHEMA, exportedAt: nowISO, state: state }, null, 1);
+  }
+  function parseBackup(text, defaults) {
+    var o;
+    try { o = JSON.parse(String(text).replace(/^\uFEFF/, '')); } catch (e) { return { ok: false, error: 'not_json' }; }
+    if (!o || o.app !== 'maead' || !o.state || typeof o.state !== 'object') return { ok: false, error: 'not_maead' };
+    if (typeof o.schema === 'number' && o.schema > SCHEMA) return { ok: false, error: 'too_new' };
+    return { ok: true, state: migrateState(o.state, defaults), exportedAt: o.exportedAt || '' };
+  }
+
   var api = {
+    makeBackup: makeBackup, parseBackup: parseBackup,
+    mapHeader: mapHeader,
     migrateState: migrateState, dayProgress: dayProgress, checkTemplate: checkTemplate, SCHEMA: SCHEMA,
     normDigits: normDigits, normalizePhone: normalizePhone, parseDate: parseDate, parseTime: parseTime,
     splitRows: splitRows, parseTable: parseTable, dateLabel: dateLabel, timeLabel: timeLabel,

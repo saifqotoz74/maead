@@ -18,8 +18,18 @@
   var form = $('req'), note = $('q-note');
   form.addEventListener('submit', function (e) {
     e.preventDefault();
-    if (!num) { note.textContent = 'رقم التواصل لسه متحطش في config.js قبل النشر.'; return; }
     var msg = 'أهلاً، عايز أجهّز ميعاد لعيادتي.\nالاسم: ' + $('q-n').value + '\nالعيادة: ' + $('q-c').value + '\nالمواعيد دلوقتي: ' + $('q-t').value;
+    if (!num) {
+      note.innerHTML = '<b>رقم الدعم لسه مش متاح، ومحدش هيستلم الطلب ده.</b> الأداة نفسها شغالة ومجانية: <a href="app.html#demo">جرّبها دلوقتي</a>. ولو عايز تحتفظ بالطلب، انسخه من هنا:<textarea id="q-copy" rows="4" readonly></textarea><button type="button" class="btn ghost small" id="q-copybtn">انسخ الطلب</button> <span id="q-copied" role="status"></span>';
+      $('q-copy').value = msg;
+      $('q-copybtn').onclick = function () {
+        var t = $('q-copy'); t.select();
+        var done = function () { $('q-copied').textContent = 'اتنسخ.'; };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(msg).then(done, function () { document.execCommand('copy'); done(); });
+        else { document.execCommand('copy'); done(); }
+      };
+      return;
+    }
     window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
   });
 })();

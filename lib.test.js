@@ -102,3 +102,14 @@ test('checkTemplate flags templates missing the essentials', () => {
   assert.ok(M.checkTemplate('تعالى بكرة').includes('no_name'));
   assert.ok(M.checkTemplate('x'.repeat(800)).includes('too_long'));
 });
+
+test('backup round trip and rejection of other files', () => {
+  const d = { text: '', clinic: 'x', fee: 300, tpl: 'T', marks: {}, day: '', sample: false };
+  const st = M.migrateState({ clinic: 'النور', text: 'a,b', marks: { r1: { sent: true, outcome: 'came' } } }, d);
+  const b = M.parseBackup(M.makeBackup(st, '2026-11-26T10:00:00Z'), d);
+  assert.ok(b.ok);
+  assert.deepStrictEqual(b.state, st);
+  assert.strictEqual(M.parseBackup('hello', d).error, 'not_json');
+  assert.strictEqual(M.parseBackup('{"a":1}', d).error, 'not_maead');
+  assert.strictEqual(M.parseBackup(JSON.stringify({ app: 'maead', schema: 99, state: {} }), d).error, 'too_new');
+});

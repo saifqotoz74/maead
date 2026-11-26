@@ -63,3 +63,12 @@ details p{margin:10px 0 0;color:#34413A}
   .navbar nav{display:none}.navbar{justify-content:space-between}
   .inputs{grid-template-columns:1fr 1fr}
 }
+
+#q-copy{margin:8px 0;font-size:15px}
+.navbar nav a{padding:6px 2px}
+@media (max-width:760px){
+  .navbar{flex-wrap:wrap;gap:8px 14px}
+  .navbar nav{order:3;width:100%;margin:0;gap:4px 16px;overflow-x:auto;flex-wrap:nowrap;white-space:nowrap}
+  .navbar nav a{min-height:40px;display:inline-flex;align-items:center}
+  .nav{position:static}
+}

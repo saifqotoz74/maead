@@ -28,12 +28,12 @@
   <summary id="setupSum">إعداد الجدول والرسالة</summary>
   <section class="step" aria-labelledby="s1">
     <h2 id="s1"><span class="n">١</span>هات جدول مواعيدك</h2>
-    <p class="hint">انسخ الأعمدة من إكسل أو شيتس والصقها هنا، أو ارفع ملف CSV. محتاج أعمدة: الاسم، الموبايل، التاريخ. والساعة والدكتور اختياريين.</p>
+    <p class="hint">انسخ الأعمدة من إكسل أو شيتس والصقها هنا، أو ارفع ملف إكسل أو CSV. محتاج أعمدة: الاسم، الموبايل، التاريخ. والساعة والدكتور اختياريين.</p>
     <textarea id="paste" rows="6" spellcheck="false" placeholder="الاسم	الموبايل	التاريخ	الساعة	الدكتور&#10;منى حسن	01000000001	27/11/2026	5 م	د. سارة"></textarea>
     <div class="actions">
       <button class="btn" id="btnParse" type="button">اقرا الجدول</button>
-      <label class="btn ghost" for="file" style="margin:0">ارفع ملف CSV</label>
-      <input type="file" id="file" accept=".csv,.tsv,.txt,text/csv" hidden>
+      <label class="btn ghost" for="file" style="margin:0">ارفع ملف إكسل أو CSV</label>
+      <input type="file" id="file" accept=".csv,.tsv,.txt,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
       <button class="btn ghost" id="btnSample" type="button">جرّب ببيانات تجريبية</button>
       <button class="btn ghost" id="btnClear" type="button">امسح كل البيانات</button>
     </div>
@@ -76,12 +76,18 @@
     <p class="hint">بعد ما اليوم يعدّي، علّم كل ميعاد «حضر» أو «غاب». الصفحة بتقارن غياب اللي اتبعتلهم تذكير بغياب اللي ما اتبعتلهمش.</p>
     <div id="results" class="results"></div>
     <div class="actions"><button class="btn ghost" id="btnExport" type="button">نزّل الجدول بحالته (CSV)</button></div>
+    <h3 class="sub3">نسخة احتياطية</h3>
+    <p class="hint">بياناتك محفوظة في المتصفح ده بس. لو مسحت بيانات المتصفح أو غيّرت الموبايل هتضيع. نزّل نسخة من وقت لوقت، وارجّعها من هنا.</p>
+    <div class="actions"><button class="btn ghost" id="btnBackup" type="button">نزّل نسخة احتياطية</button>
+      <label class="btn ghost" for="restoreFile" style="margin:0">رجّع من نسخة</label><input type="file" id="restoreFile" accept=".json,application/json" hidden></div>
+    <div id="backupInfo" class="info" role="status" aria-live="polite"></div>
   </section>
 </main>
 
-<footer class="foot"><div class="wrap">ميعاد أداة مساعدة، مش بديل لنظام عيادة كامل. مفيش نتايج مضمونة. <a href="index.html">رجوع للصفحة الرئيسية</a></div></footer>
+<footer class="foot"><div class="wrap">ميعاد أداة مساعدة، مش بديل لنظام عيادة كامل. مفيش نتايج مضمونة. <a href="privacy.html">الخصوصية</a> · <a href="index.html">رجوع للصفحة الرئيسية</a></div></footer>
 
 <script src="lib.js" defer></script>
+<script src="xlsx.js" defer></script>
 <script src="app.js" defer></script>
 </body>
 </html>

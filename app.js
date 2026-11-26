@@ -161,6 +161,43 @@
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
   }
 
+  function readExcel(f, info, input) {
+    if (!window.MaeadXlsx || typeof DecompressionStream === 'undefined') { info.innerHTML = '<span class="err">المتصفح ده قديم ومش بيفتح إكسل. انسخ الأعمدة والصقها فوق، أو احفظ الملف CSV.</span>'; input.value = ''; return; }
+    var rd = new FileReader();
+    rd.onerror = function () { info.innerHTML = '<span class="err">معرفتش أقرا الملف.</span>'; };
+    rd.onload = function () {
+      window.MaeadXlsx.readXlsx(rd.result).then(function (rows) {
+        var tsv = window.MaeadXlsx.toTSV(rows, M.mapHeader);
+        if (!tsv.trim()) { info.innerHTML = '<span class="err">الشيت الأول فاضي.</span>'; return; }
+        setText(tsv, false);
+        info.innerHTML = '<span class="good">اتفتح ملف إكسل (أول شيت بس).</span> ' + info.innerHTML;
+      }).catch(function () { info.innerHTML = '<span class="err">الملف مش xlsx سليم أو متحمي بباسورد. احفظه CSV أو انسخ الأعمدة والصقها.</span>'; });
+      input.value = '';
+    };
+    rd.readAsArrayBuffer(f);
+  }
+
+  function backupNow() {
+    var blob = new Blob([M.makeBackup(state, new Date().toISOString())], { type: 'application/json' });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'maead-backup-' + todayISO() + '.json';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+  function restoreFrom(f) {
+    var box = $('backupInfo');
+    var rd = new FileReader();
+    rd.onerror = function () { box.innerHTML = '<span class="err">معرفتش أقرا الملف.</span>'; };
+    rd.onload = function () {
+      var r = M.parseBackup(String(rd.result), state);
+      var msg = { not_json: 'الملف ده مش نسخة احتياطية من ميعاد.', not_maead: 'الملف ده مش نسخة احتياطية من ميعاد.', too_new: 'النسخة دي من إصدار أحدث من الصفحة دي.' };
+      if (!r.ok) { box.innerHTML = '<span class="err">' + msg[r.error] + '</span>'; return; }
+      if (!window.confirm('هترجّع النسخة دي وتمسح البيانات الحالية. متأكد؟')) return;
+      state = r.state; $('paste').value = state.text; $('clinic').value = state.clinic; $('fee').value = state.fee; $('tpl').value = state.tpl;
+      reparse(); save(); renderAll(); if (parsed.rows.length) $('setup').open = false;
+      box.innerHTML = '<span class="good">اترجّعت النسخة (' + parsed.rows.length + ' ميعاد).</span>';
+    };
+    rd.readAsText(f, 'utf-8');
+  }
+
   function init() {
     load();
     $('clinic').value = state.clinic; $('fee').value = state.fee; $('tpl').value = state.tpl; $('paste').value = state.text;
@@ -183,7 +220,8 @@
       var f = e.target.files[0]; if (!f) return;
       var info = $('parseInfo');
       if (f.size > 2 * 1024 * 1024) { info.innerHTML = '<span class="err">الملف كبير (أكتر من 2 ميجا). ده مش جدول مواعيد عادي. صدّر الأعمدة المطلوبة بس كـ CSV.</span>'; e.target.value = ''; return; }
-      if (/\.xlsx?$/i.test(f.name)) { info.innerHTML = '<span class="err">ملفات إكسل مش بتتقري هنا. افتح الملف واختار حفظ باسم > CSV، أو انسخ الأعمدة والصقها فوق.</span>'; e.target.value = ''; return; }
+      if (/\.xls$/i.test(f.name)) { info.innerHTML = '<span class="err">ملف إكسل القديم (xls) مش مدعوم. افتحه واحفظه بصيغة xlsx أو CSV، أو انسخ الأعمدة والصقها فوق.</span>'; e.target.value = ''; return; }
+      if (/\.xlsx$/i.test(f.name)) { readExcel(f, info, e.target); return; }
       var rd = new FileReader();
       rd.onerror = function () { info.innerHTML = '<span class="err">معرفتش أقرا الملف. جرّب تنسخ الأعمدة والصقها فوق.</span>'; };
       rd.onload = function () { setText(String(rd.result), false); e.target.value = ''; };
@@ -198,6 +236,8 @@
     $('nextDay').onclick = function () { state.day = M.addDays(state.day, 1); save(); renderAll(); };
     $('goTomorrow').onclick = function () { state.day = M.addDays(todayISO(), 1); save(); renderAll(); };
     $('btnExport').onclick = exportCSV;
+    $('btnBackup').onclick = backupNow;
+    $('restoreFile').onchange = function (e) { var f = e.target.files[0]; if (f) restoreFrom(f); e.target.value = ''; };
 
     $('list').addEventListener('click', function (e) {
       var a = e.target.closest && e.target.closest('a.wa'); if (!a) return;

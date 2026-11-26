@@ -24,3 +24,9 @@ WhatsApp appointment reminders for small clinics that still run on Excel or a pa
 - State: `{ v, text, clinic, fee, tpl, day, sample, marks }`. `marks` maps a row id to `{ sent: bool, outcome: '' | 'confirmed' | 'came' | 'noshow' }`.
 - Nothing leaves the browser. Sending is a `wa.me` link the user taps. No server, no account, no automatic sending.
 - Checks: `node --test lib.test.js` (unit) and `node e2e.mjs` (real Chrome, needs `google-chrome`).
+
+## Tests
+
+- `node --test lib.test.js xlsx.test.js`: unit tests (parsing, state migration, backup, real .xlsx file; the xlsx test reads `/tmp/sample.xlsx` if present).
+- `node e2e.mjs`, `node e2e-files.mjs`, `node devices.mjs`: real Chrome over CDP (core flow, xlsx upload and backup/restore, no sideways scroll at 320 to 1280px, keyboard-only walk).
+- Only Chrome was available for testing. Safari and Firefox were not tested.
