@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ميعاد | تذكير واتساب لكل مريض من نفس جدول إكسل بتاعك</title>
-<meta name="description" content="لو عيادتك شغالة على إكسل أو كشكول، ميعاد بيطلّعلك رسايل واتساب جاهزة لمواعيد بكرة من غير ما تغيّر نظامك. تجهيز في يوم، وأرقامك تفضل على جهازك.">
+<meta name="description" content="لو عيادتك شغالة على إكسل أو كشكول، ميعاد بيطلّعلك رسايل واتساب جاهزة لمواعيد بكرة من غير ما تغيّر نظامك. جرّب 7 أيام مجانًا، وأرقام مرضاك تفضل على جهازك.">
 <link rel="preload" href="plex-arabic-400.woff2" as="font" type="font/woff2" crossorigin>
 <meta property="og:type" content="website">
 <meta property="og:locale" content="ar_EG">
 <meta property="og:title" content="ميعاد | تذكير واتساب لكل مريض من نفس جدول إكسل بتاعك">
 <meta property="og:description" content="الصق جدول مواعيد بكرة واطلع رسالة واتساب جاهزة لكل مريض. جرّبها 7 أيام مجانًا، وبيانات مرضاك تفضل على جهازك.">
-<meta property="og:image" content="https://saifqotoz74.github.io/maead/app-demo-top.png">
-<meta property="og:url" content="https://saifqotoz74.github.io/maead/">
+<meta property="og:image" content="https://maead.pages.dev/app-demo-top.png">
+<meta property="og:url" content="https://maead.pages.dev/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231f5d4a%27/%3E%3Cpath d=%27M9 23V10l7 8 7-8v13%27 fill=%27none%27 stroke=%27%23f6f1e7%27 stroke-width=%273%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
 <link rel="stylesheet" href="fonts.css">
 <link rel="stylesheet" href="site.css">
@@ -37,7 +37,7 @@
     <p class="lead">الصق جدول مواعيد بكرة، ميعاد يطلّعلك رسالة واتساب جاهزة باسم كل مريض وساعته ودكتوره. السكرتيرة تدوس «ابعت» وتخلص في دقايق. وبعد كام أسبوع تشوف من أرقامك انت: الغياب نزل ولا لأ.</p>
     <div class="cta">
       <a class="btn" href="app.html#demo">جرّب على جدول تجريبي</a>
-      <a class="btn ghost" href="#price">اطلب تجهيز عيادتك</a>
+      <a class="btn ghost" href="app.html">ابدأ التجربة المجانية (٧ أيام)</a>
     </div>
     <p class="fine">٧ أيام تجربة مجانية من غير كارت، وبتشتغل من المتصفح. بعدها اشتراك شهري، والسعر تحت.</p>
   </div>
@@ -102,7 +102,7 @@
         <div class="o"><span>كشوفات ضايعة في الشهر</span><b class="num" id="o-miss">0</b></div>
         <div class="o"><span>فلوس ضايعة في الشهر (جنيه)</span><b class="num neg" id="o-lost">0</b></div>
         <div class="o"><span>ممكن ترجع في الشهر (جنيه)</span><b class="num pos" id="o-back">0</b></div>
-        <div class="o"><span>الباقي بعد خصم متابعة 250 ج</span><b class="num" id="o-net">0</b></div>
+        <div class="o" id="o-netrow" hidden><span>الباقي بعد الاشتراك الشهري</span><b class="num" id="o-net">0</b></div>
       </div>
     </div>
   </div>
@@ -110,31 +110,23 @@
 
 <section class="wrap block" id="price">
   <h2>السعر</h2>
-  <p class="muted">الأسعار دي افتتاحية ولسه بنختبرها مع أول 10 عيادات. مش أسعار نهائية.</p>
+  <p class="muted">السعر لسه بيتحدد، وهنقولك رقمه قبل ما تدفع أي حاجة. التجربة من غير كارت ومن غير ما تدفع.</p>
   <div class="plans">
     <article class="plan">
-      <h3>الأداة</h3>
+      <h3>التجربة</h3>
       <div class="pr"><b>٧ أيام مجانًا</b></div>
-      <p class="tiny" style="margin:0 0 8px">وبعدها اشتراك شهري. <span id="priceNow">السعر: يُحدد</span></p>
-      <ul><li>الصق، اقرا، ابعت، علّم النتيجة</li><li>بيانات المرضى على جهازك بس</li><li>نزّل جدولك بحالته CSV</li><li>الاشتراك بكود بتاخده بعد الدفع على إنستاباي</li></ul>
-      <a class="btn ghost" href="app.html">ابدأ التجربة</a>
+      <ul><li>على جدولك الحقيقي، مش بيانات تجريبية بس</li><li>من غير كارت ومن غير حساب</li><li>مرة واحدة لكل رقم عيادة</li></ul>
+      <a class="btn" href="app.html">ابدأ التجربة</a>
     </article>
     <article class="plan main">
-      <span class="tag ok">أول 10 عيادات</span>
-      <h3>تجهيز عيادتك</h3>
-      <div class="pr"><b class="num">500</b> جنيه مرة واحدة <small>(بعد الأوائل: 1,000)</small></div>
-      <ul><li>نظبط أعمدة جدولك الحالي معاك</li><li>نكتب الرسالة بصوت عيادتك</li><li>تدريب السكرتيرة 20 دقيقة على مكالمة</li><li>نتأكد إن أول يوم اتبعت صح</li></ul>
-      <a class="btn" href="#contact">اطلب التجهيز</a>
-    </article>
-    <article class="plan">
-      <h3>متابعة شهرية</h3>
-      <div class="pr"><b class="num">250</b> جنيه في الشهر</div>
-      <ul><li>كل أسبوع تقرير غياب من جدولك</li><li>قايمة مرضى محتاجين ميعاد متابعة</li><li>تعديل الرسالة وقت ما تحتاج</li></ul>
-      <p class="tiny">اختياري. لو مش محتاجها، الأداة تكمّل لوحدها.</p>
+      <h3>الاشتراك الشهري</h3>
+      <div class="pr"><b id="priceNow">السعر: يُحدد</b></div>
+      <ul><li>تدفع على إنستاباي وتاخد كود تفعيل على واتساب</li><li>الكود بيشتغل 30 يوم من أول استخدام</li><li>بيانات المرضى على جهازك بس</li><li>لو وقفت، الأداة بتقفل الإرسال وبياناتك تفضل عندك</li></ul>
+      <a class="btn ghost" href="#contact">اسأل على واتساب</a>
     </article>
   </div>
   <div id="contact" class="contact">
-    <h3>اطلب التجهيز</h3>
+    <h3>عندك سؤال؟</h3>
     <form id="req" novalidate>
       <div><label for="q-n">اسمك</label><input id="q-n" autocomplete="name"></div>
       <div><label for="q-c">اسم العيادة والتخصص</label><input id="q-c"></div>
@@ -164,7 +156,7 @@
   <details><summary>هتضمنوا إن الغياب ينزل؟</summary><p>لا. الدليل العلمي بيقول التذكير بيساعد في المتوسط، مش في كل عيادة. علشان كده الأداة بتحسب أرقامك انت.</p></details>
   <details><summary>المرضى مش هيتضايقوا من الرسائل؟</summary><p>ممكن حد يتضايق، ومفيش دليل مصري نقيسه بيه. علشان كده ابعت بس لمريض وافق يستقبل رسايل من العيادة، واسأله مرة واحدة عند الحجز. الرسالة قصيرة وفيها اسم العيادة ووسيلة يرد بيها «تأكيد» أو يلغي. والإرسال بإيدك رسالة رسالة، مفيش رسايل جماعية.</p></details>
   <details><summary>السكرتيرة عندي مش بتحب التكنولوجيا.</summary><p>الأداة متصممة إن شغلها يبقى: تلصق الجدول، تدوس «ابعت» جنب كل اسم، وتعلّم «حضر» أو «غاب» بعد الميعاد. مفيش حساب ولا كلمة سر. جرّبها على بيانات تجريبية قبل ما تحط بيانات حقيقية.</p></details>
-  <details><summary>التجربة مجانية، وبعدها أدفع إزاي؟</summary><p>الأداة ليها تجربة مجانية 7 أيام من غير كارت، وبعدها اشتراك شهري بكود. التجهيز (نظبط معاك الجدول والرسالة) خدمة تانية اختيارية. وبيانات التجربة التجريبية بأسماء وهمية شغالة دايمًا من غير اشتراك.</p></details>
+  <details><summary>التجربة مجانية، وبعدها أدفع إزاي؟</summary><p>الأداة ليها تجربة مجانية 7 أيام من غير كارت، وبعدها اشتراك شهري بكود. وبيانات التجربة التجريبية بأسماء وهمية شغالة دايمًا من غير اشتراك.</p></details>
   <details><summary>ينفع جيم أو صالون أو مركز؟</summary><p>الفكرة نفسها تنفع لأي حاجة بمواعيد. لكن الرسالة والأرقام متصممة للعيادات، ومحدش جرّبها في غير كده لسه، فمش هنوعد بحاجة قبل ما نجرّب.</p></details>
 </section>
 

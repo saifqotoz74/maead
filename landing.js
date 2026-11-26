@@ -7,7 +7,9 @@
     $('c-rv').textContent = Math.round(r * 100);
     var miss = v * d * n, lost = miss * f, back = lost * r;
     $('o-miss').textContent = fmt(miss); $('o-lost').textContent = fmt(lost); $('o-back').textContent = fmt(back);
-    var net = back - 250;
+    var price = +((window.MAEAD_CONFIG || {}).price) || 0, row = $('o-netrow');
+    if (row) row.hidden = !price;
+    var net = back - price;
     $('o-net').textContent = (net < 0 ? '-' : '') + fmt(Math.abs(net));
     $('o-net').className = 'num ' + (net >= 0 ? 'pos' : 'neg');
   }
@@ -25,7 +27,7 @@
     e.preventDefault();
     if (!$('q-n').value.trim() || !$('q-c').value.trim()) { note.textContent = 'اكتب اسمك واسم العيادة الأول.'; ($('q-n').value.trim() ? $('q-c') : $('q-n')).focus(); return; }
     note.textContent = '';
-    var msg = 'أهلاً، عايز أجهّز ميعاد لعيادتي.\nالاسم: ' + $('q-n').value + '\nالعيادة: ' + $('q-c').value + '\nالمواعيد دلوقتي: ' + $('q-t').value + srcLine();
+    var msg = 'أهلاً، عندي سؤال عن ميعاد.\nالاسم: ' + $('q-n').value + '\nالعيادة: ' + $('q-c').value + '\nالمواعيد دلوقتي: ' + $('q-t').value + srcLine();
     if (!num) {
       note.innerHTML = '<b>رقم الدعم لسه مش متاح، ومحدش هيستلم الطلب ده.</b> الأداة شغالة، وفيها تجربة مجانية: <a href="app.html#demo">جرّبها دلوقتي</a>. ولو عايز تحتفظ بالطلب، انسخه من هنا:<textarea id="q-copy" rows="4" readonly></textarea><button type="button" class="btn ghost small" id="q-copybtn">انسخ الطلب</button> <span id="q-copied" role="status"></span>';
       $('q-copy').value = msg;
