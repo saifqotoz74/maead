@@ -18,11 +18,12 @@
   <div class="wrap bar">
     <a class="brand" href="index.html" aria-label="ميعاد، الصفحة الرئيسية"><span class="mark" aria-hidden="true"></span>ميعاد</a>
     <span class="tag warn">نسخة تجريبية</span>
-    <span class="privacy">البيانات بتفضل على جهازك. مفيش سيرفر ولا حساب.</span>
+    <span class="privacy">بيانات المرضى بتفضل على جهازك.</span>
   </div>
 </header>
 
 <main class="wrap" id="main">
+  <section id="licBox" class="lic" aria-label="الاشتراك" hidden></section>
   <div id="sampleBanner" class="banner" hidden>دي بيانات تجريبية بأسماء وأرقام وهمية. امسحها والصق جدولك علشان تجرّب بجد.</div>
 
   <details id="setup" class="setup" open>
@@ -89,6 +90,8 @@
 
 <script src="lib.js" defer></script>
 <script src="xlsx.js" defer></script>
+<script src="config.js"></script>
+<script src="licence.js" defer></script>
 <script src="app.js" defer></script>
 </body>
 </html>

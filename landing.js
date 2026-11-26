@@ -27,7 +27,7 @@
     note.textContent = '';
     var msg = 'أهلاً، عايز أجهّز ميعاد لعيادتي.\nالاسم: ' + $('q-n').value + '\nالعيادة: ' + $('q-c').value + '\nالمواعيد دلوقتي: ' + $('q-t').value + srcLine();
     if (!num) {
-      note.innerHTML = '<b>رقم الدعم لسه مش متاح، ومحدش هيستلم الطلب ده.</b> الأداة نفسها شغالة ومجانية: <a href="app.html#demo">جرّبها دلوقتي</a>. ولو عايز تحتفظ بالطلب، انسخه من هنا:<textarea id="q-copy" rows="4" readonly></textarea><button type="button" class="btn ghost small" id="q-copybtn">انسخ الطلب</button> <span id="q-copied" role="status"></span>';
+      note.innerHTML = '<b>رقم الدعم لسه مش متاح، ومحدش هيستلم الطلب ده.</b> الأداة شغالة، وفيها تجربة مجانية: <a href="app.html#demo">جرّبها دلوقتي</a>. ولو عايز تحتفظ بالطلب، انسخه من هنا:<textarea id="q-copy" rows="4" readonly></textarea><button type="button" class="btn ghost small" id="q-copybtn">انسخ الطلب</button> <span id="q-copied" role="status"></span>';
       $('q-copy').value = msg;
       $('q-copybtn').onclick = function () {
         var t = $('q-copy'); t.select();

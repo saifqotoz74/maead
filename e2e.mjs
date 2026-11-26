@@ -13,6 +13,7 @@ const ev=async(expr)=>{const r=await send('Runtime.evaluate',{expression:expr,re
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++;};
 await send('Page.enable');
+await send('Page.addScriptToEvaluateOnNewDocument',{source:"Object.defineProperty(window,'MAEAD_CONFIG',{configurable:true,set(v){v.licenceApi='';this._c=v},get(){return this._c}})"});
 await send('Page.navigate',{url:`file://${process.cwd()}/app.html`}); await sleep(800);
 await ev(`localStorage.clear()`); await send('Page.navigate',{url:`file://${process.cwd()}/app.html`}); await sleep(800);
 // 1. paste a messy Excel-style table for tomorrow

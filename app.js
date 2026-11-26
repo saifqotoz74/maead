@@ -91,6 +91,7 @@
       var msg = M.buildMessage(state.tpl, r, state.clinic);
       var btn;
       if (blocking) btn = '<span class="tag bad">' + esc(r.issues.map(function (i) { return ISSUE_AR[i]; }).filter(Boolean).join('، ')) + '</span>';
+      else if (lockedNow()) btn = '<span class="wa off">اشترك علشان تبعت</span>';
       else btn = '<a class="wa' + (mk.sent ? ' done' : '') + '" data-id="' + r.id + '" target="_blank" rel="noopener" href="' + M.waLink(r.e164, msg) + '">' + (mk.sent ? 'اتبعت. ابعت تاني' : 'ابعت واتساب') + '</a>';
       var oc = mk.outcome || '';
       html += '<div class="row' + (mk.sent ? ' sentrow' : '') + '" role="row">' +
@@ -133,7 +134,7 @@
     var n = parsed.rows.length;
     $('setupSum').textContent = n ? 'الجدول: ' + n + ' ميعاد · ' + (state.clinic || 'بدون اسم عيادة') + ' · اضغط للتعديل' : 'إعداد الجدول والرسالة';
   }
-  function renderAll() { renderPreview(); renderDay(); renderResults(); renderSetup(); $('sampleBanner').hidden = !state.sample; }
+  function renderAll() { if (window.MaeadLicence) renderLic(window.MaeadLicence.view()); renderPreview(); renderDay(); renderResults(); renderSetup(); $('sampleBanner').hidden = !state.sample; }
 
   function setText(text, isSample) {
     state.text = text; state.sample = !!isSample; $('paste').value = text; reparse();
@@ -198,6 +199,39 @@
     rd.readAsText(f, 'utf-8');
   }
 
+
+  /* ---- licence box ---- */
+  var L = window.MaeadLicence;
+  function lockedNow() { return !!(L && L.enabled() && L.view().locked && !state.sample); }
+  function priceText() { var p = (window.MAEAD_CONFIG || {}).price; return p ? 'السعر: ' + p + ' جنيه في الشهر' : 'السعر: يُحدد'; }
+  function supportLink(text, msg) { return '<a href="https://wa.me/' + ((window.MAEAD_CONFIG || {}).whatsapp || '') + '?text=' + encodeURIComponent(msg) + '" target="_blank" rel="noopener">' + text + '</a>'; }
+  var LIC_ERR = { bad_input: 'اكتب اسم العيادة ورقم موبايل مصري صحيح.', trial_used: 'الرقم ده خد التجربة قبل كده. لو معاك كود اكتبه تحت.', trial_busy: 'التجارب المجانية وقفت لحد بكرة. جرّب بكرة أو كلمنا على واتساب.', unknown_code: 'الكود ده مش موجود. اتأكد منه.', revoked: 'الكود ده اتلغى. كلمنا على واتساب.', expired: 'الكود ده خلص. كلمنا نجدّده.', network: 'مفيش اتصال بالسيرفر. جرّب تاني لما النت يرجع.', bad_code: 'اكتب الكود زي MD-XXXX-XXXX.', server_error: 'حصلت مشكلة عندنا. جرّب كمان شوية.' };
+  function renderLic(v) {
+    var box = $('licBox'); if (!box || !L || !L.enabled()) return;
+    var keep = box.querySelector('input:focus'); if (keep && keep.id) { return; }
+    var h = '', buy = supportLink('اشترك على واتساب', 'عايز أشترك في ميعاد. الكود: ' + (v.code || 'لسه معييش') );
+    if (v.state === 'active' || v.state === 'grace') {
+      h = '<div class="licline"><b>' + (v.kind === 'trial' ? 'تجربة مجانية' : 'اشتراك شغال') + '</b> فاضل ' + v.left + ' يوم. كودك: <span class="num">' + esc(v.code) + '</span>' +
+        (v.state === 'grace' ? ' <span class="tag warn">من غير اتصال: شغال ' + v.graceLeft + ' يوم كمان</span>' : '') +
+        (v.kind === 'trial' ? ' ' + buy + ' <span class="muted">(' + priceText() + ')</span>' : '') + '</div>';
+      box.className = 'lic ok';
+    } else {
+      var why = { none: 'جرّب ميعاد ٧ أيام مجانًا بالبيانات الحقيقية. من غير كارت.', expired: 'الاشتراك خلص. التذكيرات الحقيقية واقفة، وبياناتك لسه موجودة على جهازك.', revoked: 'الكود ده اتلغى. التذكيرات الحقيقية واقفة.', unknown: 'الكود ده مش معروف. التذكيرات الحقيقية واقفة.', stale: 'لازم النت يتوصل مرة علشان نتأكد من الاشتراك. التذكيرات الحقيقية واقفة لحد ما يحصل.', unverified: 'مقدرناش نتأكد من الكود. اكتبه تاني.' }[v.state] || '';
+      h = '<h2>' + (v.state === 'none' ? 'ابدأ التجربة المجانية' : 'فعّل الاشتراك') + '</h2><p class="hint">' + why + ' ' + priceText() + '. البيانات التجريبية والنسخ الاحتياطي شغالين دايمًا.</p>' +
+        '<div class="licgrid">' +
+        (v.state === 'none' ? '<div class="licf"><div class="grid2"><div><label for="licClinic">اسم العيادة</label><input id="licClinic" autocomplete="off"></div><div><label for="licPhone">موبايل العيادة</label><input id="licPhone" inputmode="tel" autocomplete="off" placeholder="01XXXXXXXXX"></div></div><button class="btn" id="licTrial" type="button">ابدأ ٧ أيام مجانًا</button></div>' : '') +
+        '<div class="licf"><label for="licCode">عندي كود</label><div class="inl"><input id="licCode" autocomplete="off" placeholder="MD-XXXX-XXXX" dir="ltr"><button class="btn ghost" id="licAct" type="button">فعّل</button></div></div></div>' +
+        '<div id="licMsg" class="info" role="status" aria-live="polite"></div>' +
+        '<p class="hint">بنسجّل اسم العيادة وموبايلها وكود الاشتراك بس. بيانات المرضى مبتسيبش جهازك. ' + supportLink('محتاج مساعدة؟', 'عايز أفعّل ميعاد' ) + '</p>';
+      box.className = 'lic lock';
+    }
+    box.innerHTML = h; box.hidden = false;
+    var msg = function (k) { var m = $('licMsg'); if (m) m.innerHTML = '<span class="err">' + esc(LIC_ERR[k] || k) + '</span>'; };
+    var go = function (p) { var m = $('licMsg'); if (m) m.textContent = 'ثانية...'; p.then(function (r) { if (r.error) msg(r.error); else { renderAll(); } }); };
+    if ($('licTrial')) $('licTrial').onclick = function () { go(L.startTrial($('licClinic').value, $('licPhone').value)); };
+    if ($('licAct')) $('licAct').onclick = function () { go(L.activate($('licCode').value)); };
+  }
+
   function init() {
     load();
     $('clinic').value = state.clinic; $('fee').value = state.fee; $('tpl').value = state.tpl; $('paste').value = state.text;
@@ -260,6 +294,7 @@
       var id = s.getAttribute('data-id'); state.marks[id] = Object.assign({}, state.marks[id], { outcome: s.value }); save(); renderAll();
     });
 
+    if (L) { L.onChange(function () { renderAll(); }); L.init(); }
     if (location.hash === '#demo' && !parsed.rows.length) { $('btnSample').click(); }
   }
   init();

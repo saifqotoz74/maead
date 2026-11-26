@@ -13,6 +13,7 @@ const ev=async(x)=>{const r=await send('Runtime.evaluate',{expression:x,returnBy
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 let fails=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) fails++;};
 await send('Page.enable');
+await send('Page.addScriptToEvaluateOnNewDocument',{source:"Object.defineProperty(window,'MAEAD_CONFIG',{configurable:true,set(v){v.licenceApi='';this._c=v},get(){return this._c}})"});
 const pages=['index.html','app.html#demo','privacy.html'];
 for (const [w,h,mob,label] of [[320,640,true,'small phone'],[360,740,true,'Android'],[390,844,true,'iPhone'],[768,1024,true,'tablet'],[1280,800,false,'desktop']]) {
   await send('Emulation.setDeviceMetricsOverride',{width:w,height:h,deviceScaleFactor:2,mobile:mob});

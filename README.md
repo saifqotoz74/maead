@@ -30,3 +30,10 @@ WhatsApp appointment reminders for small clinics that still run on Excel or a pa
 - `node --test lib.test.js xlsx.test.js`: unit tests (parsing, state migration, backup, real .xlsx file; the xlsx test reads `/tmp/sample.xlsx` if present).
 - `node e2e.mjs`, `node e2e-files.mjs`, `node devices.mjs`: real Chrome over CDP (core flow, xlsx upload and backup/restore, no sideways scroll at 320 to 1280px, keyboard-only walk).
 - Only Chrome was available for testing. Safari and Firefox were not tested.
+
+## Licence (trial and subscription)
+- `licence.js` is the client. `config.js` holds `licenceApi`, `licencePubKey` and `price` (null shows "السعر: يُحدد"). An empty `licenceApi` turns the gate off.
+- Server: Cloudflare Worker + D1 (source in a separate folder, not in this repo). It stores clinic name, phone, code, dates and status. No patient data.
+- Locked state disables the WhatsApp send links for real data. Sample data, backup, export and viewing stay available.
+- Offline grace: 7 days after the last successful check, never past the licence expiry.
+- Tests: `node e2e-licence.mjs` (mock API signing real ECDSA tokens).

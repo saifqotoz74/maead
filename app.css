@@ -89,3 +89,12 @@
 
 .sub3{font-size:19px;margin:26px 0 0}
 input[type=date]:focus-within{outline:3px solid #8DB9A5;outline-offset:2px}
+.lic{margin:18px 0 0;padding:16px 18px;border:1.5px solid var(--line);border-radius:var(--r);background:var(--card)}
+.lic.lock{border-color:var(--clay)}
+.lic h2{margin:0 0 4px;font-size:20px}
+.lic .licline{font-size:15px;line-height:1.9}
+.lic .muted{color:var(--muted)}
+.licgrid{display:grid;grid-template-columns:1.6fr 1fr;gap:20px;align-items:end;margin-top:10px}
+.licgrid .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px}
+.lic .inl{display:flex;gap:8px}.lic .inl input{flex:1;min-width:0}
+@media(max-width:720px){.licgrid,.licgrid .grid2{grid-template-columns:1fr}}
