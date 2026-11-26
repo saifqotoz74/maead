@@ -24,6 +24,11 @@ const info=await ev(`document.getElementById('parseInfo').textContent`);
 ok(/اتفتح ملف إكسل/.test(info)&&/اتقرا 3 ميعاد/.test(info),'xlsx opened in the browser, 3 rows: '+info.slice(0,60));
 const name=await ev(`document.getElementById('paste').value.split('\\n')[1]`);
 ok(/منى/.test(name)&&/01000000001/.test(name),'phone stored as a number got its leading 0');
+// the same file with its extension stripped still opens (checked by content, not by name)
+await ev(`document.getElementById('btnClear').click()`); await sleep(200);
+fs.copyFileSync(xlsx,'/tmp/sample-noext');
+await send('DOM.setFileInputFiles',{nodeId:await q('#file'),files:['/tmp/sample-noext']}); await sleep(1200);
+ok(/اتقرا 3 ميعاد/.test(await ev(`document.getElementById('parseInfo').textContent`)),'xlsx without extension opens too');
 // mark one sent, backup, clear, restore
 await ev(`document.getElementById('day').value='2026-11-27';document.getElementById('day').dispatchEvent(new Event('change'))`);
 await ev(`document.querySelector('#list select')&&(document.querySelector('#list select').value='came',document.querySelector('#list select').dispatchEvent(new Event('change',{bubbles:true})))`);

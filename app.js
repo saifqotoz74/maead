@@ -221,12 +221,23 @@
       var info = $('parseInfo');
       if (f.size > 2 * 1024 * 1024) { info.innerHTML = '<span class="err">الملف كبير (أكتر من 2 ميجا). ده مش جدول مواعيد عادي. صدّر الأعمدة المطلوبة بس كـ CSV.</span>'; e.target.value = ''; return; }
       if (/\.xls$/i.test(f.name)) { info.innerHTML = '<span class="err">ملف إكسل القديم (xls) مش مدعوم. افتحه واحفظه بصيغة xlsx أو CSV، أو انسخ الأعمدة والصقها فوق.</span>'; e.target.value = ''; return; }
-      if (/\.xlsx$/i.test(f.name)) { readExcel(f, info, e.target); return; }
+      /* an .xlsx is a zip: "PK" at the start. Check the bytes, so a renamed or extension-less file still opens. */
+      var head = new FileReader(), inputEl = e.target;
+      head.onload = function () {
+        var b = new Uint8Array(head.result);
+        if ((b[0] === 0x50 && b[1] === 0x4B) || /\.xlsx$/i.test(f.name)) { readExcel(f, info, inputEl); return; }
+        readText(f, info, inputEl);
+      };
+      head.onerror = function () { info.innerHTML = '<span class="err">معرفتش أقرا الملف.</span>'; };
+      head.readAsArrayBuffer(f.slice(0, 4));
+      return;
+    };
+    function readText(f, info, input) {
       var rd = new FileReader();
       rd.onerror = function () { info.innerHTML = '<span class="err">معرفتش أقرا الملف. جرّب تنسخ الأعمدة والصقها فوق.</span>'; };
-      rd.onload = function () { setText(String(rd.result), false); e.target.value = ''; };
+      rd.onload = function () { setText(String(rd.result), false); input.value = ''; };
       rd.readAsText(f, 'utf-8');
-    };
+    }
     $('clinic').oninput = function () { state.clinic = this.value; save(); renderAll(); };
     $('fee').oninput = function () { state.fee = this.value; save(); renderResults(); };
     $('tpl').oninput = function () { state.tpl = this.value; save(); renderAll(); };
