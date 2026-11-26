@@ -167,6 +167,7 @@
     reparse();
     if (!state.day) state.day = M.addDays(todayISO(), 1);
     renderAll();
+    if (parsed.rows.length) $('setup').open = false;
 
     $('btnParse').onclick = function () { state.sample = false; setText($('paste').value, false); };
     $('btnSample').onclick = function () { setText(sampleCSV(), true); seedSampleMarks(); save(); renderAll(); };
