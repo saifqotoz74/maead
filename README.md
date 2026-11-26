@@ -16,3 +16,11 @@ WhatsApp appointment reminders for small clinics that still run on Excel or a pa
 
 ## Tests
 `node --test lib.test.js` (8 unit tests). `node e2e.mjs` (11 checks in real Chrome, needs google-chrome).
+
+## Structure and data model (v2)
+
+- `lib.js`: pure functions only (phone and date parsing, message building, stats, `migrateState`, `dayProgress`, `checkTemplate`). No DOM. Tested with `node --test lib.test.js`.
+- `app.js`: DOM and storage. One `state` object, saved to `localStorage` under `maead.v1` and passed through `migrateState` on every load, so an old or corrupted save cannot break the page.
+- State: `{ v, text, clinic, fee, tpl, day, sample, marks }`. `marks` maps a row id to `{ sent: bool, outcome: '' | 'confirmed' | 'came' | 'noshow' }`.
+- Nothing leaves the browser. Sending is a `wa.me` link the user taps. No server, no account, no automatic sending.
+- Checks: `node --test lib.test.js` (unit) and `node e2e.mjs` (real Chrome, needs `google-chrome`).

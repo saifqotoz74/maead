@@ -202,7 +202,51 @@
     return { all: agg(valid), sent: agg(sent), notSent: agg(notSent) };
   }
 
+
+  /* ---- stored state: versioned so old saves never break the page ---- */
+  var SCHEMA = 2;
+  var OUTCOMES = ['', 'confirmed', 'came', 'noshow'];
+  function migrateState(raw, defaults) {
+    var out = {}, k;
+    for (k in defaults) out[k] = defaults[k];
+    if (!raw || typeof raw !== 'object') return out;
+    if (typeof raw.text === 'string') out.text = raw.text.slice(0, 500000);
+    if (typeof raw.clinic === 'string') out.clinic = raw.clinic.slice(0, 80);
+    if (raw.fee != null && isFinite(+raw.fee) && +raw.fee >= 0) out.fee = +raw.fee;
+    if (typeof raw.tpl === 'string' && raw.tpl.trim()) out.tpl = raw.tpl.slice(0, 2000);
+    if (typeof raw.day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.day)) out.day = raw.day;
+    out.sample = !!raw.sample;
+    var marks = {};
+    if (raw.marks && typeof raw.marks === 'object') {
+      Object.keys(raw.marks).forEach(function (id) {
+        var m = raw.marks[id] || {};
+        marks[id] = { sent: !!m.sent, outcome: OUTCOMES.indexOf(m.outcome) >= 0 ? m.outcome : '' };
+      });
+    }
+    out.marks = marks;
+    out.v = SCHEMA;
+    return out;
+  }
+
+  /* how far through the day's reminders the secretary is */
+  function dayProgress(rows, marks) {
+    var sendable = rows.filter(function (r) { return !r.issues.some(function (i) { return i === 'bad_phone' || i === 'no_phone' || i === 'duplicate'; }); });
+    var sent = sendable.filter(function (r) { return (marks[r.id] || {}).sent; }).length;
+    return { total: rows.length, sendable: sendable.length, sent: sent, left: sendable.length - sent, blocked: rows.length - sendable.length };
+  }
+
+  /* warn about a template that would send something unhelpful */
+  function checkTemplate(tpl) {
+    var w = [];
+    if (!/\{name\}/.test(tpl)) w.push('no_name');
+    if (!/\{day\}/.test(tpl)) w.push('no_day');
+    if (!/\{clinic\}/.test(tpl)) w.push('no_clinic');
+    if (tpl.length > 700) w.push('too_long');
+    return w;
+  }
+
   var api = {
+    migrateState: migrateState, dayProgress: dayProgress, checkTemplate: checkTemplate, SCHEMA: SCHEMA,
     normDigits: normDigits, normalizePhone: normalizePhone, parseDate: parseDate, parseTime: parseTime,
     splitRows: splitRows, parseTable: parseTable, dateLabel: dateLabel, timeLabel: timeLabel,
     buildMessage: buildMessage, waLink: waLink, addDays: addDays, stats: stats, DEFAULT_TEMPLATE: DEFAULT_TEMPLATE

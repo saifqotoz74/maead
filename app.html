@@ -5,11 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ميعاد | جرّب تذكيرات واتساب على جدولك</title>
 <meta name="description" content="الصق جدول مواعيدك من إكسل واطلع برسايل واتساب جاهزة لكل مريض. البيانات بتفضل على جهازك.">
+<link rel="preload" href="plex-arabic-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="plex-arabic-600.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="fonts.css">
 <link rel="stylesheet" href="site.css">
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
+<a class="skip" href="#today">روح لمواعيد اليوم</a>
 <header class="top">
   <div class="wrap bar">
     <a class="brand" href="index.html" aria-label="ميعاد، الصفحة الرئيسية"><span class="mark" aria-hidden="true"></span>ميعاد</a>
@@ -18,9 +21,11 @@
   </div>
 </header>
 
-<main class="wrap">
+<main class="wrap" id="main">
   <div id="sampleBanner" class="banner" hidden>دي بيانات تجريبية بأسماء وأرقام وهمية. امسحها والصق جدولك علشان تجرّب بجد.</div>
 
+  <details id="setup" class="setup" open>
+  <summary id="setupSum">إعداد الجدول والرسالة</summary>
   <section class="step" aria-labelledby="s1">
     <h2 id="s1"><span class="n">١</span>هات جدول مواعيدك</h2>
     <p class="hint">انسخ الأعمدة من إكسل أو شيتس والصقها هنا، أو ارفع ملف CSV. محتاج أعمدة: الاسم، الموبايل، التاريخ. والساعة والدكتور اختياريين.</p>
@@ -33,6 +38,7 @@
       <button class="btn ghost" id="btnClear" type="button">امسح كل البيانات</button>
     </div>
     <div id="parseInfo" class="info" role="status" aria-live="polite"></div>
+    <div id="undo" class="undo" role="status" aria-live="polite" hidden></div>
   </section>
 
   <section class="step" aria-labelledby="s2">
@@ -44,10 +50,13 @@
     <label for="tpl" style="margin-top:14px">نص الرسالة</label>
     <textarea id="tpl" rows="5"></textarea>
     <p class="hint">المتغيرات: {name} {clinic} {day} {time_part} {doctor_part}. <button type="button" class="linkbtn" id="btnTplReset">رجّع النص الافتراضي</button></p>
+    <div id="tplWarn" class="info" role="status" aria-live="polite"></div>
     <div class="preview"><div class="pl">معاينة</div><div id="preview" class="bubble"></div></div>
   </section>
 
-  <section class="step" aria-labelledby="s3">
+  </details>
+
+  <section class="step" id="today" tabindex="-1" aria-labelledby="s3">
     <h2 id="s3"><span class="n">٣</span>مواعيد اليوم</h2>
     <div class="daynav">
       <button class="btn ghost small" id="prevDay" type="button" aria-label="اليوم السابق">اليوم اللي قبله</button>
@@ -56,8 +65,9 @@
       <button class="btn ghost small" id="goTomorrow" type="button">بكرة</button>
     </div>
     <div id="dayLabel" class="daylabel"></div>
+    <div id="progress" class="progress" hidden><div class="pbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="تقدّم التذكيرات"><span id="pfill"></span></div><div id="ptext" class="ptext" aria-live="polite"></div></div>
     <div id="chips" class="chips"></div>
-    <div id="list" class="list" role="table" aria-label="مواعيد اليوم"></div>
+    <div id="list" class="list" role="table" aria-label="مواعيد اليوم" aria-busy="false"></div>
     <p class="hint">كل زرار بيفتح واتساب برسالة جاهزة من رقمك، وانت اللي بتدوس إرسال. مفيش إرسال تلقائي ولا جماعي. ابعت بس لمرضى وافقوا يستقبلوا رسايل من العيادة.</p>
   </section>
 
@@ -71,7 +81,7 @@
 
 <footer class="foot"><div class="wrap">ميعاد أداة مساعدة، مش بديل لنظام عيادة كامل. مفيش نتايج مضمونة. <a href="index.html">رجوع للصفحة الرئيسية</a></div></footer>
 
-<script src="lib.js"></script>
-<script src="app.js"></script>
+<script src="lib.js" defer></script>
+<script src="app.js" defer></script>
 </body>
 </html>

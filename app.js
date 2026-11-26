@@ -10,7 +10,7 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function todayISO() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* private mode */ } }
-  function load() { try { var s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s) for (var k in s) state[k] = s[k]; } catch (e) { /* ignore */ } }
+  function load() { try { state = M.migrateState(JSON.parse(localStorage.getItem(KEY) || 'null'), state); } catch (e) { /* corrupt save: start clean */ } }
 
   var ISSUE_AR = { no_phone: 'مفيش رقم', bad_phone: 'الرقم مش موبايل مصري صح', bad_date: 'التاريخ مش مفهوم', bad_time: 'الساعة مش مفهومة', no_name: 'مفيش اسم', duplicate: 'مكرر' };
 
@@ -79,10 +79,10 @@
     $('day').value = state.day;
     $('dayLabel').textContent = state.day ? M.dateLabel(state.day) : '';
     var rows = dayRows(), list = $('list');
-    if (!parsed.rows.length) { list.innerHTML = '<div class="empty">لسه مفيش جدول. الصق جدولك فوق أو جرّب البيانات التجريبية.</div>'; $('chips').innerHTML = ''; return; }
-    if (!rows.length) { list.innerHTML = '<div class="empty">مفيش مواعيد في اليوم ده في الجدول.</div>'; $('chips').innerHTML = ''; return; }
+    if (!parsed.rows.length) { $('progress').hidden = true; list.innerHTML = '<div class="empty">لسه مفيش جدول. الصق جدولك فوق أو جرّب البيانات التجريبية.</div>'; $('chips').innerHTML = ''; return; }
+    if (!rows.length) { $('progress').hidden = true; list.innerHTML = '<div class="empty">مفيش مواعيد في اليوم ده في الجدول.</div>'; $('chips').innerHTML = ''; return; }
     var sent = 0, ready = 0, probs = 0;
-    var html = '<div class="row head" role="row"><div>الساعة</div><div>المريض</div><div>الدكتور</div><div>الموبايل</div><div>تذكير</div><div>النتيجة</div></div>';
+    var html = '<div class="row head" role="row"><div role="columnheader">الساعة</div><div role="columnheader">المريض</div><div role="columnheader">الدكتور</div><div role="columnheader">الموبايل</div><div role="columnheader">تذكير</div><div role="columnheader">النتيجة</div></div>';
     rows.forEach(function (r) {
       var mk = state.marks[r.id] || {};
       var blocking = r.issues.some(function (i) { return i === 'bad_phone' || i === 'no_phone' || i === 'duplicate'; });
@@ -94,16 +94,19 @@
       else btn = '<a class="wa' + (mk.sent ? ' done' : '') + '" data-id="' + r.id + '" target="_blank" rel="noopener" href="' + M.waLink(r.e164, msg) + '">' + (mk.sent ? 'اتبعت. ابعت تاني' : 'ابعت واتساب') + '</a>';
       var oc = mk.outcome || '';
       html += '<div class="row' + (mk.sent ? ' sentrow' : '') + '" role="row">' +
-        '<div class="t num">' + esc(M.timeLabel(r.time) || '-') + '</div>' +
-        '<div class="who">' + esc(r.name || '-') + (r.service ? '<small>' + esc(r.service) + '</small>' : '') + '</div>' +
-        '<div>' + esc(r.doctor || '-') + '</div>' +
-        '<div class="num">' + esc(r.phoneDisplay) + '</div>' +
-        '<div class="send">' + btn + '</div>' +
-        '<div class="out"><select data-id="' + r.id + '" aria-label="نتيجة الميعاد">' +
+        '<div class="t num" role="cell">' + esc(M.timeLabel(r.time) || '-') + '</div>' +
+        '<div class="who" role="cell">' + esc(r.name || '-') + (r.service ? '<small>' + esc(r.service) + '</small>' : '') + '</div>' +
+        '<div role="cell" class="doc">' + esc(r.doctor || '-') + '</div>' +
+        '<div class="num ph" role="cell">' + esc(r.phoneDisplay) + '</div>' +
+        '<div class="send" role="cell">' + btn + '</div>' +
+        '<div class="out" role="cell"><select data-id="' + r.id + '" aria-label="نتيجة ميعاد ' + esc(r.name || '') + '">' +
         [['', 'لسه'], ['confirmed', 'أكّد'], ['came', 'حضر'], ['noshow', 'غاب']].map(function (o) { return '<option value="' + o[0] + '"' + (oc === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
         '</select></div></div>';
     });
     list.innerHTML = html;
+    var pg = M.dayProgress(rows, state.marks), pc = pg.sendable ? Math.round(pg.sent / pg.sendable * 100) : 0;
+    $('progress').hidden = false; $('pfill').style.width = pc + '%'; $('pfill').parentNode.setAttribute('aria-valuenow', pc);
+    $('ptext').textContent = pg.left ? 'اتبعت ' + pg.sent + ' من ' + pg.sendable + '. فاضل ' + pg.left + '.' : (pg.sendable ? 'كل تذكيرات اليوم اتبعتت.' : '');
     $('chips').innerHTML = '<span class="tag">' + rows.length + ' مواعيد</span><span class="tag ok">' + sent + ' اتبعتلهم تذكير</span>' +
       (ready - sent > 0 ? '<span class="tag warn">' + (ready - sent) + ' لسه</span>' : '') + (probs ? '<span class="tag bad">' + probs + ' محتاجين مراجعة</span>' : '');
   }
@@ -123,7 +126,14 @@
     el.innerHTML = html;
   }
 
-  function renderAll() { renderPreview(); renderDay(); renderResults(); $('sampleBanner').hidden = !state.sample; }
+  var TPL_W = { no_name: 'الرسالة مفيهاش {name}، فهتوصل لكل المرضى بدون اسمهم.', no_day: 'الرسالة مفيهاش {day}، المريض مش هيعرف يوم الميعاد.', no_clinic: 'الرسالة مفيهاش {clinic}.', too_long: 'الرسالة طويلة. الأقصر بتتقري أكتر.' };
+  function renderSetup() {
+    var w = M.checkTemplate(state.tpl);
+    $('tplWarn').innerHTML = w.length ? '<span class="err">' + w.map(function (k) { return esc(TPL_W[k]); }).join(' ') + '</span>' : '';
+    var n = parsed.rows.length;
+    $('setupSum').textContent = n ? 'الجدول: ' + n + ' ميعاد · ' + (state.clinic || 'بدون اسم عيادة') + ' · اضغط للتعديل' : 'إعداد الجدول والرسالة';
+  }
+  function renderAll() { renderPreview(); renderDay(); renderResults(); renderSetup(); $('sampleBanner').hidden = !state.sample; }
 
   function setText(text, isSample) {
     state.text = text; state.sample = !!isSample; $('paste').value = text; reparse();
@@ -134,6 +144,7 @@
       state.day = future.length ? future[0] : (dates[dates.length - 1] || t);
     }
     save(); renderAll();
+    if (parsed.rows.length) { $('setup').open = false; }
   }
 
   function csvCell(v) { v = String(v == null ? '' : v); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
@@ -159,10 +170,23 @@
 
     $('btnParse').onclick = function () { state.sample = false; setText($('paste').value, false); };
     $('btnSample').onclick = function () { setText(sampleCSV(), true); seedSampleMarks(); save(); renderAll(); };
-    $('btnClear').onclick = function () { state.marks = {}; setText('', false); state.day = M.addDays(todayISO(), 1); save(); renderAll(); };
+    $('btnClear').onclick = function () {
+      if (!state.text && !Object.keys(state.marks).length) return;
+      var backup = JSON.stringify(state), u = $('undo');
+      state.marks = {}; setText('', false); state.day = M.addDays(todayISO(), 1); save(); renderAll(); $('setup').open = true;
+      u.hidden = false; u.innerHTML = 'اتمسحت كل البيانات. <button type="button" class="linkbtn" id="btnUndo">تراجع</button>';
+      var tm = setTimeout(function () { u.hidden = true; }, 15000);
+      $('btnUndo').onclick = function () { clearTimeout(tm); state = M.migrateState(JSON.parse(backup), state); $('paste').value = state.text; $('clinic').value = state.clinic; $('tpl').value = state.tpl; reparse(); save(); renderAll(); u.hidden = true; if (parsed.rows.length) $('setup').open = false; };
+    };
     $('file').onchange = function (e) {
       var f = e.target.files[0]; if (!f) return;
-      var rd = new FileReader(); rd.onload = function () { setText(String(rd.result), false); }; rd.readAsText(f, 'utf-8');
+      var info = $('parseInfo');
+      if (f.size > 2 * 1024 * 1024) { info.innerHTML = '<span class="err">الملف كبير (أكتر من 2 ميجا). ده مش جدول مواعيد عادي. صدّر الأعمدة المطلوبة بس كـ CSV.</span>'; e.target.value = ''; return; }
+      if (/\.xlsx?$/i.test(f.name)) { info.innerHTML = '<span class="err">ملفات إكسل مش بتتقري هنا. افتح الملف واختار حفظ باسم > CSV، أو انسخ الأعمدة والصقها فوق.</span>'; e.target.value = ''; return; }
+      var rd = new FileReader();
+      rd.onerror = function () { info.innerHTML = '<span class="err">معرفتش أقرا الملف. جرّب تنسخ الأعمدة والصقها فوق.</span>'; };
+      rd.onload = function () { setText(String(rd.result), false); e.target.value = ''; };
+      rd.readAsText(f, 'utf-8');
     };
     $('clinic').oninput = function () { state.clinic = this.value; save(); renderAll(); };
     $('fee').oninput = function () { state.fee = this.value; save(); renderResults(); };
