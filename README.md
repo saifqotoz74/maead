@@ -5,7 +5,7 @@ WhatsApp appointment reminders for small clinics that still run on Excel or a pa
 - `index.html` sales page (Arabic, RTL). `app.html` the working tool. Open them in a browser, no build step, no server.
 - Paste an Excel table, get a ready WhatsApp message per patient (official wa.me link, sent manually from the clinic's own number), mark came / no-show, compare no-show for reminded vs not reminded.
 - Data stays in the browser (localStorage). Nothing is uploaded.
-- Set the public contact number in `config.js` (empty on purpose).
+- The public support number is set in `config.js`. Payment details are not on the public pages.
 
 ## Honest scope
 - Sending is manual, one patient at a time. No bulk or automatic sending.

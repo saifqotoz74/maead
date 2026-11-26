@@ -1,3 +1,3 @@
-/* Set the WhatsApp number that receives setup requests, international format without + (e.g. 2010xxxxxxxx).
-   Left empty on purpose: the owner decides which number goes public. */
-window.MAEAD_CONFIG = { whatsapp: '' };
+/* WhatsApp number that receives setup requests, international format without + .
+   This is the public support number. Payment details are NOT on the public pages. */
+window.MAEAD_CONFIG = { whatsapp: '201229105279' };
