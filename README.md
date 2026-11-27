@@ -2,9 +2,11 @@
 
 WhatsApp appointment reminders for small clinics that still run on Excel or a paper book. Prototype, not a product.
 
-- `index.html` sales page (Arabic, RTL). `app.html` the working tool. Open them in a browser, no build step, no server.
+Live site: https://maead.pages.dev (sales page) and https://maead.pages.dev/app.html (the tool). Owner-only admin: https://maead.pages.dev/admin.
+
+- `index.html` sales page (Arabic, RTL). `app.html` the working tool. Open them in a browser, no build step. Patient data has no server; the trial and activation gate talks to the licence API in `config.js` (set `licenceApi` to `''` to run locally with the gate off).
 - Paste an Excel table, get a ready WhatsApp message per patient (official wa.me link, sent manually from the clinic's own number), mark came / no-show, compare no-show for reminded vs not reminded.
-- Data stays in the browser (localStorage). Nothing is uploaded.
+- Patient data stays in the browser (localStorage). Nothing about patients is uploaded; the licence server only ever sees clinic name, phone and code.
 - The public support number is set in `config.js`. Payment details are not on the public pages.
 
 ## Honest scope

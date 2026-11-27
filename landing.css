@@ -41,11 +41,11 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--green)}
 .o{background:var(--card);border:1.5px solid var(--line);border-radius:var(--r);padding:14px 18px;display:flex;justify-content:space-between;align-items:baseline;gap:12px}
 .o span{font-size:15px;color:var(--muted)}.o b{font-size:28px}
 .neg{color:var(--clay)}.pos{color:var(--green)}
-.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:22px}
+.plans{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:22px}
 .plan{background:var(--card);border:1.5px solid var(--line);border-radius:var(--r);padding:24px;display:flex;flex-direction:column;gap:6px}
 .plan.main{border-color:var(--green);border-width:2px}
 .plan h3{margin:6px 0 0}
-.pr{font-size:15px;color:var(--muted)}.pr b{font-size:34px;color:var(--ink);line-height:1.2}
+.pr{font-size:15px;color:var(--muted)}.pr b{font-size:clamp(25px,2.7vw,34px);color:var(--ink);line-height:1.2}
 .plan ul{padding-inline-start:20px;margin:10px 0 14px;font-size:15.5px;flex:1}
 .plan li{margin-bottom:5px}
 .contact{margin-top:36px;padding:26px;background:var(--sand);border-radius:var(--r);max-width:620px}
@@ -57,6 +57,9 @@ details p{margin:10px 0 0;color:#34413A}
 .src{font-size:14.5px;line-height:1.8;padding-inline-start:22px}
 .src a{word-break:break-all}
 .foot{padding:26px 0;font-size:14px;color:var(--muted)}
+@media (min-width:861px){
+  .pr b{white-space:nowrap}
+}
 @media (max-width:860px){
   .hero,.two,.calc,.plans{grid-template-columns:1fr}
   .hero{padding-top:36px;gap:30px}
