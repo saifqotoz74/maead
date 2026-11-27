@@ -6,5 +6,5 @@ window.MAEAD_CONFIG = {
   whatsapp: '201229105279',
   licenceApi: 'https://maead-licence.saifhossam661.workers.dev',
   licencePubKey: {"kty":"EC","crv":"P-256","x":"2LZTEcY6eQ3cidd2QZKGTRBItIH_Un9058jJywd7wj4","y":"VQPQ7pi27rLQZFADsf2a0YNACPTRqdCMiLMVqLZ-MRE","ext":true,"key_ops":["verify"]},
-  price: null
+  price: 199
 };
