@@ -8,48 +8,184 @@
 <link rel="stylesheet" href="fonts.css">
 <link rel="stylesheet" href="site.css">
 <link rel="stylesheet" href="app.css">
+<style>
+  .adm{max-width:900px;margin:0 auto;padding:18px 0 60px}
+  .adm h1{font-size:26px;margin:6px 0 4px}
+  .adm h2{font-size:19px;margin:26px 0 10px;color:var(--green-d)}
+  .adm label{display:block;font-size:14px;color:var(--muted);margin:10px 0 4px}
+  .adm input,.adm select{width:100%}
+  .card{background:var(--card);border:1.5px solid var(--line);border-radius:var(--r);padding:16px}
+  .who{font-size:14px;color:var(--muted)}
+  .pill{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;border:1.5px solid var(--line);background:var(--sand);color:var(--ink);vertical-align:middle}
+  .pill.own{border-color:#B7CDBF;background:#E7F0EA;color:var(--green-d)}
+  .pill.stf{border-color:#D8CFBC;background:#F3EEE2}
+  .pill.st{font-size:12px}
+  .st-active{background:#E7F0EA;border-color:#B7CDBF;color:#235C3A}
+  .st-expired{background:#F3EEE2;border-color:#D8CFBC;color:#7A6A45}
+  .st-revoked{background:var(--clay-l);border-color:#E2C4B3;color:#8A3A1B}
+  .tblwrap{overflow-x:auto;border:1.5px solid var(--line);border-radius:var(--r);background:var(--card)}
+  table{border-collapse:collapse;width:100%;font-size:14px;min-width:660px}
+  th,td{padding:9px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+  th{background:var(--sand);font-weight:600;font-size:13px;color:var(--ink)}
+  tr:last-child td{border-bottom:0}
+  td.code{font-family:ui-monospace,Menlo,Consolas,monospace;direction:ltr;text-align:left}
+  .rowbtns{display:flex;gap:6px;flex-wrap:wrap}
+  .btn.sm{min-height:34px;padding:4px 12px;font-size:13px}
+  .sep{border:0;border-top:1.5px solid var(--line);margin:26px 0 0}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:640px){.two{grid-template-columns:1fr}.adm{padding:10px 0 40px}}
+  details summary{cursor:pointer;color:var(--green);font-size:14px;margin-top:14px}
+  .muted{color:var(--muted);font-size:13px}
+</style>
 </head>
 <body>
-<main class="wrap" style="padding-top:24px;max-width:760px">
-  <h1>إدارة أكواد ميعاد</h1>
-  <p class="hint">للمالك بس. المفتاح بيتكتب هنا وبيفضل في الصفحة المفتوحة ومبيتحفظش. اقفل التبويب وخلاص.</p>
-  <label for="k">مفتاح الإدارة</label><input id="k" type="password" autocomplete="off" dir="ltr">
-  <h2>كود جديد (بعد ما العيادة تدفع)</h2>
-  <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-    <div><label for="ic">اسم العيادة</label><input id="ic"></div>
-    <div><label for="ip">موبايل العيادة (اختياري)</label><input id="ip" inputmode="tel"></div>
-    <div><label for="id">عدد الأيام</label><input id="id" type="number" value="30" min="1" max="400"></div>
-    <div style="align-self:end"><button class="btn" id="bi" type="button">اطلع كود</button></div>
-  </div>
-  <h2>كود موجود</h2>
-  <div class="inl" style="display:flex;gap:8px;flex-wrap:wrap">
-    <input id="c" placeholder="MD-XXXX-XXXX" dir="ltr" style="flex:1;min-width:180px">
-    <input id="ed" type="number" value="30" min="1" max="400" style="width:90px" aria-label="أيام التمديد">
-    <button class="btn ghost" id="be" type="button">مدّد</button>
-    <button class="btn ghost" id="br" type="button">الغي</button>
-    <button class="btn ghost" id="bu" type="button">رجّع</button>
-  </div>
-  <p><button class="btn ghost" id="bl" type="button">اعرض آخر الأكواد</button></p>
-  <pre id="out" dir="ltr" style="white-space:pre-wrap;background:var(--sand);padding:14px;border-radius:var(--r);min-height:60px;overflow:auto"></pre>
+<main class="wrap adm">
+
+  <header class="bar" id="topbar" hidden>
+    <div class="brand" style="font-size:20px">ميعاد <span class="muted" style="font-weight:400">/ إدارة</span></div>
+    <div style="flex:1"></div>
+    <div id="who" class="who"></div>
+    <button class="btn ghost sm" id="pwBtn" type="button">كلمة السر</button>
+    <button class="btn ghost sm" id="outBtn" type="button">خروج</button>
+  </header>
+
+  <p id="msg" class="info" role="status" aria-live="polite" hidden></p>
+
+  <!-- دخول -->
+  <section id="loginCard" hidden>
+    <h1>دخول الإدارة</h1>
+    <p class="hint">حساب لكل واحد في الفريق، والملك بيحدد مين يشوف إيه.</p>
+    <div class="card">
+      <label for="lu">اسم المستخدم</label>
+      <input id="lu" dir="ltr" autocomplete="username" autocapitalize="none" spellcheck="false">
+      <label for="lp">كلمة السر</label>
+      <input id="lp" type="password" dir="ltr" autocomplete="current-password">
+      <div class="actions"><button class="btn" id="loginBtn" type="button">دخول</button></div>
+      <details>
+        <summary>نسيت كلمة السر</summary>
+        <p class="hint" style="margin-top:10px">الاسترجاع بمفتاح الإدارة: اسم المستخدم + كلمة سر جديدة + المفتاح. بعد كده ادخل وغيّرها من هنا.</p>
+        <label for="ru">اسم المستخدم</label><input id="ru" dir="ltr" autocapitalize="none" spellcheck="false">
+        <label for="rp">كلمة سر جديدة (12 حرف على الأقل)</label><input id="rp" type="password" dir="ltr" autocomplete="new-password">
+        <label for="rk">مفتاح الإدارة</label><input id="rk" type="password" dir="ltr" autocomplete="off">
+        <div class="actions"><button class="btn ghost" id="recBtn" type="button">استرجع</button></div>
+      </details>
+    </div>
+  </section>
+
+  <!-- أول حساب -->
+  <section id="setupCard" hidden>
+    <h1>إنشاء حساب المالك</h1>
+    <p class="hint">أول مرة بس. المفتاح اللي كان بيستخدم قبل كده بيفتح الشاشة دي وبس، وبعد كده كل الدخول بحساب.</p>
+    <div class="card">
+      <label for="sk">مفتاح الإدارة</label><input id="sk" type="password" dir="ltr" autocomplete="off">
+      <div class="two">
+        <div><label for="su">اسم المستخدم</label><input id="su" dir="ltr" autocapitalize="none" spellcheck="false" placeholder="saif"></div>
+        <div><label for="sn">الاسم</label><input id="sn" placeholder="سيف"></div>
+      </div>
+      <div class="two">
+        <div><label for="sp">كلمة السر (12 حرف على الأقل)</label><input id="sp" type="password" dir="ltr" autocomplete="new-password"></div>
+        <div><label for="sp2">تأكيد كلمة السر</label><input id="sp2" type="password" dir="ltr" autocomplete="new-password"></div>
+      </div>
+      <div class="actions"><button class="btn" id="setupBtn" type="button">أنشئ الحساب</button></div>
+    </div>
+  </section>
+
+  <!-- التطبيق -->
+  <section id="app" hidden>
+
+    <h2>كود جديد (بعد ما العيادة تدفع)</h2>
+    <div class="card">
+      <div class="two">
+        <div><label for="ic">اسم العيادة</label><input id="ic"></div>
+        <div><label for="ip">موبايل العيادة (اختياري)</label><input id="ip" inputmode="tel"></div>
+        <div><label for="id">عدد الأيام</label><input id="id" type="number" value="30" min="1" max="400"></div>
+        <div><label for="inote">ملاحظة (اختياري)</label><input id="inote" placeholder="دفع إنستاباي"></div>
+      </div>
+      <div class="actions"><button class="btn" id="issueBtn" type="button">اطلع كود</button></div>
+      <p class="hint" id="issueOut" hidden></p>
+    </div>
+
+    <h2>الأكواد</h2>
+    <div class="actions">
+      <button class="btn ghost sm" id="listBtn" type="button">حدّث القائمة</button>
+      <button class="btn ghost sm" id="csvBtn" type="button">نزّل CSV</button>
+      <button class="btn ghost sm" id="jsonBtn" type="button">نزّل JSON</button>
+    </div>
+    <div class="tblwrap">
+      <table>
+        <thead><tr><th>الكود</th><th>الحالة</th><th>النوع</th><th>العيادة</th><th>الموبايل</th><th>ينتهي</th><th>اتعمل</th><th>اطلعه</th></tr></thead>
+        <tbody id="licRows"><tr><td colspan="8" class="muted">لسه مفيش تحميل.</td></tr></tbody>
+      </table>
+    </div>
+
+    <h2>كود موجود</h2>
+    <div class="card">
+      <label for="c">الكود</label>
+      <input id="c" placeholder="MD-XXXX-XXXX" dir="ltr">
+      <div class="two" id="ownerOps">
+        <div><label for="ed">أيام التمديد</label><input id="ed" type="number" value="30" min="1" max="400"></div>
+        <div style="align-self:end"><div class="rowbtns">
+          <button class="btn ghost" id="extendBtn" type="button">مدّد</button>
+          <button class="btn ghost" id="revokeBtn" type="button">الغي</button>
+          <button class="btn ghost" id="unrevokeBtn" type="button">رجّع</button>
+        </div></div>
+      </div>
+      <p class="hint" id="staffNote" hidden>التمديد والإلغاء للمالك بس.</p>
+    </div>
+
+    <div id="ownerBox" hidden>
+      <hr class="sep">
+      <h2>المستخدمين</h2>
+      <div class="tblwrap">
+        <table>
+          <thead><tr><th>المستخدم</th><th>الاسم</th><th>الدور</th><th>الحالة</th><th>آخر دخول</th><th></th></tr></thead>
+          <tbody id="userRows"><tr><td colspan="6" class="muted">لسه مفيش تحميل.</td></tr></tbody>
+        </table>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <div class="two">
+          <div><label for="nu">اسم المستخدم</label><input id="nu" dir="ltr" autocapitalize="none" spellcheck="false" placeholder="reception"></div>
+          <div><label for="nn">الاسم</label><input id="nn" placeholder="استقبال"></div>
+          <div><label for="nr">الدور</label>
+            <select id="nr"><option value="staff">موظف</option><option value="owner">مالك</option></select>
+          </div>
+          <div><label for="np">كلمة سر مؤقتة (12 حرف على الأقل)</label><input id="np" type="password" dir="ltr" autocomplete="new-password"></div>
+        </div>
+        <div class="actions"><button class="btn" id="addUserBtn" type="button">ضيف مستخدم</button></div>
+        <p class="hint">الموظف بيشوف الأكواد ويطلع كود وينزّل CSV. التمديد والإلغاء والمستخدمين والسجل للمالك.</p>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <div class="two">
+          <div><label for="rsu">إعادة تعيين كلمة سر: اسم المستخدم</label><input id="rsu" dir="ltr" autocapitalize="none" spellcheck="false"></div>
+          <div><label for="rsp">كلمة السر الجديدة (12 حرف على الأقل)</label><input id="rsp" type="password" dir="ltr" autocomplete="new-password"></div>
+        </div>
+        <div class="actions"><button class="btn ghost" id="rsPassBtn" type="button">غيّرها</button></div>
+      </div>
+
+      <hr class="sep">
+      <h2>السجل</h2>
+      <div class="tblwrap">
+        <table>
+          <thead><tr><th>الوقت</th><th>المستخدم</th><th>العملية</th><th>التفاصيل</th></tr></thead>
+          <tbody id="auditRows"><tr><td colspan="4" class="muted">لسه مفيش تحميل.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <hr class="sep">
+    <h2 id="pwHead" hidden>تغيير كلمة السر</h2>
+    <div class="card" id="pwCard" hidden>
+      <div class="two">
+        <div><label for="po">كلمة السر الحالية</label><input id="po" type="password" dir="ltr" autocomplete="current-password"></div>
+        <div><label for="pn">كلمة السر الجديدة</label><input id="pn" type="password" dir="ltr" autocomplete="new-password"></div>
+      </div>
+      <div class="actions"><button class="btn" id="pwSave" type="button">احفظ</button></div>
+    </div>
+
+  </section>
 </main>
 <script src="config.js"></script>
-<script>
-(function(){
-  var $=function(i){return document.getElementById(i)};
-  function call(path,body,get){
-    var k=$('k').value.trim(); if(!k){$('out').textContent='اكتب المفتاح الأول.';return;}
-    $('out').textContent='...';
-    fetch(window.MAEAD_CONFIG.licenceApi+path,{method:get?'GET':'POST',headers:{'authorization':'Bearer '+k,'content-type':'application/json'},body:get?undefined:JSON.stringify(body||{})})
-      .then(function(r){return r.json().then(function(j){return [r.status,j]})})
-      .then(function(a){ $('out').textContent=a[0]===401?'المفتاح غلط.':JSON.stringify(a[1],null,2); })
-      .catch(function(){$('out').textContent='مفيش اتصال.';});
-  }
-  $('bi').onclick=function(){call('/admin/issue',{kind:'paid',days:+$('id').value,clinic:$('ic').value,phone:$('ip').value});};
-  $('be').onclick=function(){call('/admin/extend',{code:$('c').value,days:+$('ed').value});};
-  $('br').onclick=function(){call('/admin/revoke',{code:$('c').value});};
-  $('bu').onclick=function(){call('/admin/unrevoke',{code:$('c').value});};
-  $('bl').onclick=function(){call('/admin/list',null,true);};
-})();
-</script>
+<script src="admin.js"></script>
 </body>
 </html>
