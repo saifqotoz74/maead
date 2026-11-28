@@ -19,8 +19,39 @@
     <a class="brand" href="index.html" aria-label="ميعاد، الصفحة الرئيسية"><span class="mark" aria-hidden="true"></span>ميعاد</a>
     <span class="tag warn">نسخة تجريبية</span>
     <span class="privacy">بيانات المرضى بتفضل على جهازك.</span>
+    <button class="btn ghost sm" id="accIn" type="button">دخول العيادة</button>
   </div>
 </header>
+
+<section class="acc" id="accBar" aria-label="حساب العيادة" hidden>
+  <div class="wrap">
+    <span id="accWho"></span>
+    <span id="accNote" class="note"></span>
+    <button class="btn ghost sm" id="accSync" type="button">حدّث من السيرفر</button>
+    <button class="btn ghost sm" id="accOut" type="button">خروج</button>
+  </div>
+</section>
+
+<dialog id="accDlg" class="accdlg" aria-labelledby="accTitle">
+  <form method="dialog" class="accx"><button class="btn ghost sm" type="submit" aria-label="اقفل">×</button></form>
+  <h2 id="accTitle">حساب العيادة</h2>
+  <p class="hint">بحساب العيادة، الجدول بيتحفظ على السيرفر وتقدر تفتحه من أي جهاز ومع فريقك.</p>
+  <form id="accLogin">
+    <label for="alu">اسم المستخدم</label><input id="alu" dir="ltr" autocomplete="username" required>
+    <label for="alp">كلمة السر</label><input id="alp" type="password" dir="ltr" autocomplete="current-password" required>
+    <div class="actions"><button class="btn" type="submit">دخول</button><button class="btn ghost" id="accToReg" type="button">عيادة جديدة؟ اعمل حساب</button></div>
+  </form>
+  <form id="accReg" hidden>
+    <label for="arc">اسم العيادة</label><input id="arc" required>
+    <label for="arp">موبايل العيادة</label><input id="arp" dir="ltr" inputmode="tel">
+    <label for="ark">كود الاشتراك</label><input id="ark" dir="ltr" placeholder="MD-XXXX-XXXX" required>
+    <label for="aru">اسم المستخدم</label><input id="aru" dir="ltr" autocomplete="username" required>
+    <label for="arn">اسمك</label><input id="arn">
+    <label for="arw">كلمة السر (12 حرف على الأقل)</label><input id="arw" type="password" dir="ltr" autocomplete="new-password" required>
+    <div class="actions"><button class="btn" type="submit">أنشئ الحساب</button><button class="btn ghost" id="accToLogin" type="button">عندي حساب</button></div>
+  </form>
+  <p id="accErr" class="err" role="status"></p>
+</dialog>
 
 <main class="wrap" id="main">
   <section id="licBox" class="lic" aria-label="الاشتراك" hidden></section>
@@ -92,6 +123,7 @@
 <script src="xlsx.js" defer></script>
 <script src="config.js"></script>
 <script src="licence.js" defer></script>
+<script src="clinic-client.js" defer></script>
 <script src="app.js" defer></script>
 </body>
 </html>

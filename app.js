@@ -9,7 +9,7 @@
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function todayISO() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* private mode */ } }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* private mode */ } if (typeof queuePush === 'function') queuePush(); }
   function load() { try { state = M.migrateState(JSON.parse(localStorage.getItem(KEY) || 'null'), state); } catch (e) { /* corrupt save: start clean */ } }
 
   var ISSUE_AR = { no_phone: 'مفيش رقم', bad_phone: 'الرقم مش موبايل مصري صح', bad_date: 'التاريخ مش مفهوم', bad_time: 'الساعة مش مفهومة', no_name: 'مفيش اسم', duplicate: 'مكرر' };
@@ -295,7 +295,105 @@
     });
 
     if (L) { L.onChange(function () { renderAll(); }); L.init(); }
+    initAccount();
     if (location.hash === '#demo' && !parsed.rows.length) { $('btnSample').click(); }
   }
+
+  /* ---- clinic account + server sync -------------------------------------------------------------
+     The day still lives on the device. When a clinic is logged in, it also lives on the server:
+     pulled on open, pushed after each change, and a stale push comes back as a conflict. */
+  var C = window.Clinic || null;
+  var clinicRev = 0;
+  try { clinicRev = Number(localStorage.getItem('maead.rev.v1') || '0') || 0; } catch (e) { clinicRev = 0; }
+  var pushTimer = null, applyingRemote = false;
+
+  function saveRev(n) { clinicRev = n || 0; try { localStorage.setItem('maead.rev.v1', String(clinicRev)); } catch (e) { /* private mode */ } }
+  function setNote(txt, bad) {
+    var n = $('accNote'); if (!n) return;
+    n.textContent = txt || '';
+    n.className = 'note' + (bad ? ' err' : '');
+  }
+  function queuePush() {
+    if (!C || !C.session() || applyingRemote) return;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(pushNow, 800);
+  }
+  function pushNow() {
+    if (!C || !C.session()) return;
+    C.push(state, clinicRev).then(function (j) {
+      if (j.ok) { saveRev(j.rev); setNote('محفوظ على السيرفر'); }
+      else if (j.error === 'conflict') { saveRev(j.rev); setNote('العيادة عدّلت من جهاز تاني. اضغط «حدّث من السيرفر» قبل ما تكمل.', true); }
+      else if (j.http === 401) { C.dropIfDead(j); renderAccount(); setNote('الجلسة انتهت. سجّل دخول تاني.', true); }
+      else if (j.error === 'offline') { setNote('مفيش نت، محفوظ على الجهاز.'); }
+      else { setNote('مش قادر أحفظ على السيرفر.', true); }
+    });
+  }
+  function applyRemote(doc) {
+    applyingRemote = true;
+    var keepDay = doc && doc.day;
+    state = M.migrateState(doc, state);
+    $('clinic').value = state.clinic; $('fee').value = state.fee; $('tpl').value = state.tpl;
+    setText(state.text || '', !!state.sample);
+    if (keepDay) { state.day = keepDay; $('day').value = keepDay; }
+    save(); renderAll();
+    applyingRemote = false;
+  }
+  function pullNow() {
+    if (!C || !C.session()) return;
+    setNote('بجيب آخر نسخة…');
+    C.pull().then(function (j) {
+      if (j.http === 401) { C.dropIfDead(j); renderAccount(); setNote('الجلسة انتهت. سجّل دخول تاني.', true); return; }
+      if (!j.ok) { setNote(j.error === 'offline' ? 'مفيش نت.' : 'مش قادر أقرا من السيرفر.', true); return; }
+      saveRev(j.rev);
+      if (j.doc && j.doc.text) { applyRemote(j.doc); setNote('آخر نسخة من السيرفر'); }
+      else { setNote('الحساب جديد، الجدول اللي على الجهاز هيتحفظ عليه.'); pushNow(); }
+    });
+  }
+  function renderAccount() {
+    var s = C && C.session();
+    $('accBar').hidden = !s;
+    $('accIn').hidden = !!s;
+    if (s) $('accWho').textContent = (s.user.name || s.user.username) + ' — ' + s.user.clinic;
+  }
+  function accErr(txt) { $('accErr').textContent = txt || ''; }
+  var ACC_ERRORS = {
+    bad_login: 'اسم المستخدم أو كلمة السر غلط.', locked: 'محاولات كتير غلط. استنى شوية وجرّب تاني.',
+    bad_input: 'راجع البيانات: اسم المستخدم 3 حروف على الأقل، وكلمة السر 12 حرف على الأقل.',
+    bad_code: 'الكود مش موجود.', code_not_active: 'الكود مش مفعّل أو مش كود مدفوع.',
+    code_used: 'الكود ده مستخدم لعيادة تانية.', username_taken: 'اسم المستخدم محجوز، جرّب غيره.',
+    owner_only: 'الحاجة دي للمالك بس.', offline: 'مفيش نت.', disabled: 'الحساب مقفول.'
+  };
+  function accMsg(j) { return ACC_ERRORS[j && j.error] || 'حصلت مشكلة، جرّب تاني.'; }
+
+  function initAccount() {
+    if (!C || !C.enabled()) { $('accIn').hidden = true; return; }
+    renderAccount();
+    $('accIn').onclick = function () { accErr(''); $('accDlg').showModal(); };
+    $('accToReg').onclick = function () { $('accLogin').hidden = true; $('accReg').hidden = false; accErr(''); };
+    $('accToLogin').onclick = function () { $('accReg').hidden = true; $('accLogin').hidden = false; accErr(''); };
+    $('accSync').onclick = pullNow;
+    $('accOut').onclick = function () {
+      clearTimeout(pushTimer);
+      C.logout().then(function () { renderAccount(); setNote(''); });
+    };
+    $('accLogin').onsubmit = function (e) {
+      e.preventDefault();
+      accErr('بندخل…');
+      C.login($('alu').value.trim(), $('alp').value).then(function (j) {
+        if (!j.ok) { accErr(accMsg(j)); return; }
+        $('accDlg').close(); $('alp').value = ''; renderAccount(); pullNow();
+      });
+    };
+    $('accReg').onsubmit = function (e) {
+      e.preventDefault();
+      accErr('بنعمل الحساب…');
+      C.register($('arc').value.trim(), $('arp').value.trim(), $('ark').value.trim(), $('aru').value.trim(), $('arw').value, $('arn').value.trim()).then(function (j) {
+        if (!j.ok) { accErr(accMsg(j)); return; }
+        $('accDlg').close(); $('arw').value = ''; renderAccount(); pullNow();
+      });
+    };
+    if (C.session()) pullNow();
+  }
+
   init();
 })();

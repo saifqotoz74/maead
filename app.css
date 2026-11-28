@@ -98,3 +98,18 @@ input[type=date]:focus-within{outline:3px solid #8DB9A5;outline-offset:2px}
 .licgrid .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px}
 .lic .inl{display:flex;gap:8px}.lic .inl input{flex:1;min-width:0}
 @media(max-width:720px){.licgrid,.licgrid .grid2{grid-template-columns:1fr}}
+
+
+/* clinic account bar + dialog */
+.acc{background:#efe7d7;border-bottom:1px solid #e2d8c4}
+.acc .wrap{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 0;font-size:14px}
+.acc .note{color:#1d5a44;font-size:13px}
+.acc .note.err{color:#b4512d}
+.accdlg{width:min(420px,92vw);border:1px solid #e2d8c4;border-radius:14px;background:#fbf8f0;color:#2a2a25;padding:18px}
+.accdlg::backdrop{background:rgba(29,90,68,.25)}
+.accdlg h2{margin:0 0 6px;font-size:20px}
+.accdlg label{display:block;margin:10px 0 4px;font-size:13px;color:#5a5a50}
+.accdlg input{width:100%;padding:10px;border:1px solid #d9cfba;border-radius:9px;background:#fff;font:inherit}
+.accdlg .actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.accdlg .accx{position:absolute;top:8px;left:8px;margin:0}
+.accdlg .err{color:#b4512d;font-size:13px;min-height:18px;margin:10px 0 0}
