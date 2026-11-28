@@ -46,6 +46,13 @@ async function ensureSchema(db) {
     db.prepare('CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL, ip TEXT, ua TEXT)'),
     db.prepare('CREATE INDEX IF NOT EXISTS sessions_user ON sessions(user_id)'),
     db.prepare('CREATE TABLE IF NOT EXISTS audit (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL, user_id TEXT, username TEXT, action TEXT NOT NULL, detail TEXT)'),
+    db.prepare('CREATE TABLE IF NOT EXISTS clinics (id TEXT PRIMARY KEY, name TEXT NOT NULL, phone TEXT, code TEXT UNIQUE, status TEXT NOT NULL DEFAULT \'active\', created_at INTEGER NOT NULL, created_by TEXT, note TEXT)'),
+    db.prepare('CREATE TABLE IF NOT EXISTS clinic_users (id TEXT PRIMARY KEY, clinic_id TEXT NOT NULL, username TEXT NOT NULL UNIQUE COLLATE NOCASE, name TEXT, role TEXT NOT NULL DEFAULT \'staff\', pass_hash TEXT NOT NULL, status TEXT NOT NULL DEFAULT \'active\', created_at INTEGER NOT NULL, last_login_at INTEGER, fail_count INTEGER NOT NULL DEFAULT 0, fail_at INTEGER)'),
+    db.prepare('CREATE INDEX IF NOT EXISTS clinic_users_clinic ON clinic_users(clinic_id)'),
+    db.prepare('CREATE TABLE IF NOT EXISTS clinic_state (clinic_id TEXT PRIMARY KEY, rev INTEGER NOT NULL DEFAULT 1, doc TEXT NOT NULL, updated_at INTEGER NOT NULL, updated_by TEXT)'),
+    db.prepare('CREATE TABLE IF NOT EXISTS clinic_sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, clinic_id TEXT NOT NULL, created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL, ip TEXT, ua TEXT)'),
+    db.prepare('CREATE INDEX IF NOT EXISTS clinic_sessions_clinic ON clinic_sessions(clinic_id)'),
+    db.prepare('CREATE TABLE IF NOT EXISTS clinic_audit (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL, clinic_id TEXT, user_id TEXT, username TEXT, action TEXT NOT NULL, detail TEXT)'),
   ]);
   try { await db.prepare('ALTER TABLE licences ADD COLUMN issued_by TEXT').run(); } catch (e) { /* already there */ }
   schemaReady = true;
@@ -402,6 +409,182 @@ async function handleAdmin(req, env, p, user, t) {
 }
 
 // ---- public licence endpoints ----------------------------------------------------------------------
+// ---- clinic accounts + patient data -----------------------------------------------------------------
+// A clinic owns one state document (the pasted table, template, fee, per-row send marks) so a secretary
+// on one device and the owner on another see the same day. Every row is scoped by clinic_id.
+const DOC_MAX = 500000;
+
+async function newClinicSession(db, u, req, t) {
+  const token = randHex(32);
+  await db.prepare('INSERT INTO clinic_sessions (token_hash, user_id, clinic_id, created_at, expires_at, ip, ua) VALUES (?,?,?,?,?,?,?)')
+    .bind(await sha256Hex(token), u.id, u.clinic_id, t, t + SESSION_TTL, (req.headers.get('cf-connecting-ip') || '').slice(0, 45), (req.headers.get('user-agent') || '').slice(0, 160)).run();
+  await db.prepare('DELETE FROM clinic_sessions WHERE expires_at < ?').bind(t).run();
+  return token;
+}
+async function clinicUser(req, db, t) {
+  const tok = bearer(req);
+  if (!tok || tok.length < 32) return null;
+  const row = await db.prepare('SELECT s.expires_at, u.id, u.clinic_id, u.username, u.name, u.role, u.status, c.name AS clinic, c.status AS clinic_status FROM clinic_sessions s JOIN clinic_users u ON u.id = s.user_id JOIN clinics c ON c.id = u.clinic_id WHERE s.token_hash = ?')
+    .bind(await sha256Hex(tok)).first();
+  if (!row || row.expires_at <= t || row.status !== 'active' || row.clinic_status !== 'active') return null;
+  return { id: row.id, clinic_id: row.clinic_id, username: row.username, name: row.name, role: row.role, clinic: row.clinic };
+}
+async function clinicAudit(db, u, action, detail) {
+  try {
+    await db.prepare('INSERT INTO clinic_audit (at, clinic_id, user_id, username, action, detail) VALUES (?,?,?,?,?,?)')
+      .bind(now(), u.clinic_id, u.id, u.username, action, String(detail == null ? '' : detail).slice(0, 300)).run();
+  } catch (e) { /* logging must never break the action */ }
+}
+function clinicUserView(r) {
+  return { id: r.id, username: r.username, name: r.name, role: r.role, status: r.status, created_at: r.created_at, last_login_at: r.last_login_at };
+}
+
+async function handleClinicRegister(req, env, t) {
+  const db = env.DB, b = await req.json().catch(() => ({}));
+  const clinic = clean(b.clinic, 80), phone = normPhone(b.phone);
+  const username = String(b.username || '').toLowerCase().trim();
+  const password = typeof b.password === 'string' ? b.password : '';
+  const name = clean(b.name, 60) || clinic;
+  if (!clinic || !username || !validUsername(username) || !validPassword(password)) return json({ error: 'bad_input' }, 400, req, env);
+  const row = await findByCode(db, b.code);
+  if (!row) return json({ error: 'bad_code' }, 400, req, env);
+  const st = await statusFor(db, row, t);
+  if (st.status !== 'active' || st.kind !== 'paid') return json({ error: 'code_not_active' }, 403, req, env);
+  const used = await db.prepare('SELECT id FROM clinics WHERE code = ?').bind(row.code).first();
+  if (used) return json({ error: 'code_used' }, 409, req, env);
+  const exists = await db.prepare('SELECT id FROM clinic_users WHERE username = ?').bind(username).first();
+  if (exists) return json({ error: 'username_taken' }, 409, req, env);
+  const id = 'cl_' + randHex(8);
+  const uid = 'cu_' + randHex(8);
+  try {
+    await db.batch([
+      db.prepare('INSERT INTO clinics (id, name, phone, code, status, created_at, created_by) VALUES (?,?,?,?,?,?,?)').bind(id, clinic, phone || null, row.code, 'active', t, 'self'),
+      db.prepare('INSERT INTO clinic_users (id, clinic_id, username, name, role, pass_hash, status, created_at) VALUES (?,?,?,?,?,?,?,?)').bind(uid, id, username, name, 'owner', await hashPassword(password), 'active', t),
+      db.prepare('INSERT INTO clinic_state (clinic_id, rev, doc, updated_at, updated_by) VALUES (?,?,?,?,?)').bind(id, 1, '{}', t, uid),
+    ]);
+  } catch (e) {
+    if (/UNIQUE/.test(String(e))) return json({ error: 'code_used' }, 409, req, env);
+    throw e;
+  }
+  const user = { id: uid, clinic_id: id, username, name, role: 'owner', clinic };
+  const token = await newClinicSession(db, user, req, t);
+  await clinicAudit(db, user, 'register', clinic);
+  return json({ ok: true, token, user, expires_at: t + SESSION_TTL }, 200, req, env);
+}
+
+async function handleClinicLogin(req, env, t) {
+  const db = env.DB, b = await req.json().catch(() => ({}));
+  const username = String(b.username || '').toLowerCase().trim();
+  const password = typeof b.password === 'string' ? b.password : '';
+  if (!username || !password) return json({ error: 'bad_input' }, 400, req, env);
+  const u = await db.prepare('SELECT u.*, c.name AS clinic, c.status AS clinic_status FROM clinic_users u JOIN clinics c ON c.id = u.clinic_id WHERE u.username = ?').bind(username).first();
+  if (u && u.fail_at && t - u.fail_at < LOGIN_FAIL_WINDOW && u.fail_count >= LOGIN_FAIL_LIMIT) {
+    return json({ error: 'locked', retry_after: LOGIN_FAIL_WINDOW - (t - u.fail_at) }, 429, req, env);
+  }
+  const ok = u ? await checkPassword(password, u.pass_hash) : (await checkPassword(password, DUMMY_HASH), false);
+  if (!ok) {
+    if (u) {
+      await db.prepare('UPDATE clinic_users SET fail_count = CASE WHEN ? - COALESCE(fail_at, 0) < ? THEN fail_count + 1 ELSE 1 END, fail_at = ? WHERE id = ?')
+        .bind(t, LOGIN_FAIL_WINDOW, t, u.id).run();
+      await clinicAudit(db, { clinic_id: u.clinic_id, id: u.id, username: u.username }, 'login_fail', 'wrong password');
+    }
+    return json({ error: 'bad_login' }, 401, req, env);
+  }
+  if (u.status !== 'active') return json({ error: 'disabled' }, 403, req, env);
+  if (u.clinic_status !== 'active') return json({ error: 'clinic_disabled' }, 403, req, env);
+  const user = { id: u.id, clinic_id: u.clinic_id, username: u.username, name: u.name, role: u.role, clinic: u.clinic };
+  const token = await newClinicSession(db, user, req, t);
+  await db.prepare('UPDATE clinic_users SET fail_count = 0, fail_at = NULL, last_login_at = ? WHERE id = ?').bind(t, u.id).run();
+  await clinicAudit(db, user, 'login', (req.headers.get('cf-connecting-ip') || '').slice(0, 45));
+  return json({ ok: true, token, user, expires_at: t + SESSION_TTL }, 200, req, env);
+}
+
+async function handleClinic(req, env, p, user, t) {
+  const db = env.DB;
+  const b = await req.json().catch(() => ({}));
+  const m = req.method;
+
+  if (p === '/clinic/me' && m === 'GET') return json({ ok: true, user }, 200, req, env);
+
+  if (p === '/clinic/logout' && m === 'POST') {
+    const tok = bearer(req);
+    if (tok) await db.prepare('DELETE FROM clinic_sessions WHERE token_hash = ?').bind(await sha256Hex(tok)).run();
+    return json({ ok: true }, 200, req, env);
+  }
+
+  if (p === '/clinic/state' && m === 'GET') {
+    const row = await db.prepare('SELECT rev, doc, updated_at FROM clinic_state WHERE clinic_id = ?').bind(user.clinic_id).first();
+    let doc = {};
+    try { doc = JSON.parse((row && row.doc) || '{}'); } catch (e) { doc = {}; }
+    return json({ ok: true, rev: row ? row.rev : 0, doc, updated_at: row ? row.updated_at : 0 }, 200, req, env);
+  }
+
+  if (p === '/clinic/state' && m === 'POST') {
+    const doc = JSON.stringify(b.doc == null ? {} : b.doc);
+    if (doc.length > DOC_MAX) return json({ error: 'too_big', max: DOC_MAX }, 413, req, env);
+    const rev = Number(b.rev);
+    if (!isFinite(rev) || rev < 0) return json({ error: 'bad_input' }, 400, req, env);
+    const row = await db.prepare('SELECT rev, doc FROM clinic_state WHERE clinic_id = ?').bind(user.clinic_id).first();
+    if (row && row.rev !== rev) {
+      let serverDoc = {};
+      try { serverDoc = JSON.parse(row.doc); } catch (e) { serverDoc = {}; }
+      return json({ error: 'conflict', rev: row.rev, doc: serverDoc }, 409, req, env);
+    }
+    if (row) {
+      await db.prepare('UPDATE clinic_state SET rev = rev + 1, doc = ?, updated_at = ?, updated_by = ? WHERE clinic_id = ? AND rev = ?')
+        .bind(doc, t, user.id, user.clinic_id, rev).run();
+    } else {
+      await db.prepare('INSERT INTO clinic_state (clinic_id, rev, doc, updated_at, updated_by) VALUES (?,?,?,?,?)').bind(user.clinic_id, 1, doc, t, user.id).run();
+    }
+    const after = await db.prepare('SELECT rev FROM clinic_state WHERE clinic_id = ?').bind(user.clinic_id).first();
+    await clinicAudit(db, user, 'state_save', 'rev ' + (after ? after.rev : '?') + ', ' + doc.length + ' bytes');
+    return json({ ok: true, rev: after ? after.rev : rev + 1, updated_at: t }, 200, req, env);
+  }
+
+  if (p === '/clinic/users' && m === 'GET') {
+    const rows = await db.prepare('SELECT id, username, name, role, status, created_at, last_login_at FROM clinic_users WHERE clinic_id = ? ORDER BY created_at').bind(user.clinic_id).all();
+    return json({ ok: true, users: (rows.results || []).map(clinicUserView) }, 200, req, env);
+  }
+
+  if (p === '/clinic/users' && m === 'POST') {
+    if (!isOwner(user)) return json({ error: 'owner_only' }, 403, req, env);
+    const username = String(b.username || '').toLowerCase().trim();
+    const password = typeof b.password === 'string' ? b.password : '';
+    const name = clean(b.name, 60);
+    const role = b.role === 'owner' ? 'owner' : 'staff';
+    if (!validUsername(username) || !validPassword(password)) return json({ error: 'bad_input' }, 400, req, env);
+    const exists = await db.prepare('SELECT id FROM clinic_users WHERE username = ?').bind(username).first();
+    if (exists) return json({ error: 'username_taken' }, 409, req, env);
+    const id = 'cu_' + randHex(8);
+    await db.prepare('INSERT INTO clinic_users (id, clinic_id, username, name, role, pass_hash, status, created_at) VALUES (?,?,?,?,?,?,?,?)')
+      .bind(id, user.clinic_id, username, name || username, role, await hashPassword(password), 'active', t).run();
+    await clinicAudit(db, user, 'user_add', username + ' (' + role + ')');
+    const row = await db.prepare('SELECT id, username, name, role, status, created_at, last_login_at FROM clinic_users WHERE id = ?').bind(id).first();
+    return json({ ok: true, user: clinicUserView(row) }, 200, req, env);
+  }
+
+  if (p === '/clinic/password' && m === 'POST') {
+    const oldPass = typeof b.old === 'string' ? b.old : '';
+    const next = typeof b.new === 'string' ? b.new : '';
+    if (!validPassword(next)) return json({ error: 'bad_input' }, 400, req, env);
+    const row = await db.prepare('SELECT pass_hash FROM clinic_users WHERE id = ?').bind(user.id).first();
+    if (!row || !(await checkPassword(oldPass, row.pass_hash))) return json({ error: 'bad_login' }, 401, req, env);
+    await db.prepare('UPDATE clinic_users SET pass_hash = ? WHERE id = ?').bind(await hashPassword(next), user.id).run();
+    await db.prepare('DELETE FROM clinic_sessions WHERE user_id = ?').bind(user.id).run();
+    await clinicAudit(db, user, 'password_change', '');
+    return json({ ok: true, reauth: true }, 200, req, env);
+  }
+
+  if (p === '/clinic/wipe' && m === 'POST') {
+    if (!isOwner(user)) return json({ error: 'owner_only' }, 403, req, env);
+    await db.prepare('UPDATE clinic_state SET rev = rev + 1, doc = ?, updated_at = ?, updated_by = ? WHERE clinic_id = ?').bind('{}', t, user.id, user.clinic_id).run();
+    await clinicAudit(db, user, 'wipe', 'patient data cleared by owner');
+    return json({ ok: true }, 200, req, env);
+  }
+
+  return json({ error: 'not_found' }, 404, req, env);
+}
+
 async function handlePublic(req, env, p, t) {
   const db = env.DB;
   const b = await req.json().catch(() => ({}));
@@ -444,7 +627,7 @@ export default {
       const t = now();
       const m = req.method;
 
-      if (m === 'GET' && p === '/health') return json({ ok: true, t, v: 2 }, 200, req, env);
+      if (m === 'GET' && p === '/health') return json({ ok: true, t, v: 3 }, 200, req, env);
       if (m === 'GET' && p === '/pubkey') return json({ jwk: (await getKeys(env.DB)).pub }, 200, req, env);
 
       if (p === '/admin/state' && m === 'GET') {
@@ -454,6 +637,14 @@ export default {
       if (p === '/admin/bootstrap' && m === 'POST') return handleBootstrap(req, env, t);
       if (p === '/admin/recover' && m === 'POST') return handleRecover(req, env, t);
       if (p === '/admin/login' && m === 'POST') return handleLogin(req, env, t);
+
+      if (p === '/clinic/register' && m === 'POST') return handleClinicRegister(req, env, t);
+      if (p === '/clinic/login' && m === 'POST') return handleClinicLogin(req, env, t);
+      if (p.startsWith('/clinic/')) {
+        const cu = await clinicUser(req, env.DB, t);
+        if (!cu) return json({ error: 'unauthorized' }, 401, req, env);
+        return handleClinic(req, env, p, cu, t);
+      }
 
       if (p.startsWith('/admin/')) {
         const user = await sessionUser(req, env.DB, t);
