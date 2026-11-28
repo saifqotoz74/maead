@@ -279,6 +279,26 @@ async function handleAdmin(req, env, p, user, t) {
   }
   if (p === '/admin/me') return json({ ok: true, user, expires_at: t + SESSION_TTL }, 200, req, env);
 
+  // Clinics: the admin can see them and remove a test or closed one. Removing frees its licence code.
+  if (p === '/admin/clinics' && req.method === 'GET') {
+    const rows = await db.prepare('SELECT c.id, c.name, c.phone, c.code, c.status, c.created_at, (SELECT COUNT(*) FROM clinic_users u WHERE u.clinic_id = c.id) AS users, (SELECT updated_at FROM clinic_state st WHERE st.clinic_id = c.id) AS updated_at FROM clinics c ORDER BY c.created_at DESC').all();
+    return json({ ok: true, clinics: rows.results || [] }, 200, req, env);
+  }
+  if (p === '/admin/clinic/delete' && req.method === 'POST') {
+    const id = String(b.clinic_id || '').trim();
+    if (!id) return json({ error: 'bad_input' }, 400, req, env);
+    const row = await db.prepare('SELECT name, code FROM clinics WHERE id = ?').bind(id).first();
+    if (!row) return json({ error: 'not_found' }, 404, req, env);
+    await db.batch([
+      db.prepare('DELETE FROM clinic_sessions WHERE clinic_id = ?').bind(id),
+      db.prepare('DELETE FROM clinic_state WHERE clinic_id = ?').bind(id),
+      db.prepare('DELETE FROM clinic_users WHERE clinic_id = ?').bind(id),
+      db.prepare('DELETE FROM clinics WHERE id = ?').bind(id),
+    ]);
+    await audit(db, user, 'clinic_delete', row.name + ' (' + (row.code || '') + ')');
+    return json({ ok: true }, 200, req, env);
+  }
+
   if (p === '/admin/password') {
     const old = typeof b.old === 'string' ? b.old : '';
     const next = typeof b.next === 'string' ? b.next : '';
@@ -627,7 +647,7 @@ export default {
       const t = now();
       const m = req.method;
 
-      if (m === 'GET' && p === '/health') return json({ ok: true, t, v: 3 }, 200, req, env);
+      if (m === 'GET' && p === '/health') return json({ ok: true, t, v: 4 }, 200, req, env);
       if (m === 'GET' && p === '/pubkey') return json({ jwk: (await getKeys(env.DB)).pub }, 200, req, env);
 
       if (p === '/admin/state' && m === 'GET') {
