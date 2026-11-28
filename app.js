@@ -323,7 +323,7 @@
     C.push(state, clinicRev).then(function (j) {
       if (j.ok) { saveRev(j.rev); setNote('محفوظ على السيرفر'); }
       else if (j.error === 'conflict') { saveRev(j.rev); setNote('العيادة عدّلت من جهاز تاني. اضغط «حدّث من السيرفر» قبل ما تكمل.', true); }
-      else if (j.http === 401) { C.dropIfDead(j); renderAccount(); setNote('الجلسة انتهت. سجّل دخول تاني.', true); }
+      else if (j.http === 401) { C.dropIfDead(j); renderAccount(); pendingNote = 'الجلسة انتهت. سجّل دخول تاني.'; }
       else if (j.error === 'offline') { setNote('مفيش نت، محفوظ على الجهاز.'); }
       else { setNote('مش قادر أحفظ على السيرفر.', true); }
     });
@@ -342,7 +342,7 @@
     if (!C || !C.session()) return;
     setNote('بجيب آخر نسخة…');
     C.pull().then(function (j) {
-      if (j.http === 401) { C.dropIfDead(j); renderAccount(); setNote('الجلسة انتهت. سجّل دخول تاني.', true); return; }
+      if (j.http === 401) { C.dropIfDead(j); renderAccount(); pendingNote = 'الجلسة انتهت. سجّل دخول تاني.'; return; }
       if (!j.ok) { setNote(j.error === 'offline' ? 'مفيش نت.' : 'مش قادر أقرا من السيرفر.', true); return; }
       saveRev(j.rev);
       if (j.doc && j.doc.text) { applyRemote(j.doc); setNote('آخر نسخة من السيرفر'); }
@@ -355,6 +355,7 @@
     $('accIn').hidden = !!s;
     if (s) $('accWho').textContent = (s.user.name || s.user.username) + ' — ' + s.user.clinic;
   }
+  var pendingNote = '';
   function accErr(txt) { $('accErr').textContent = txt || ''; }
   var ACC_ERRORS = {
     bad_login: 'اسم المستخدم أو كلمة السر غلط.', locked: 'محاولات كتير غلط. استنى شوية وجرّب تاني.',
@@ -368,7 +369,7 @@
   function initAccount() {
     if (!C || !C.enabled()) { $('accIn').hidden = true; return; }
     renderAccount();
-    $('accIn').onclick = function () { accErr(''); $('accDlg').showModal(); };
+    $('accIn').onclick = function () { accErr(pendingNote); pendingNote = ''; $('accDlg').showModal(); };
     $('accToReg').onclick = function () { $('accLogin').hidden = true; $('accReg').hidden = false; accErr(''); };
     $('accToLogin').onclick = function () { $('accReg').hidden = true; $('accLogin').hidden = false; accErr(''); };
     $('accSync').onclick = pullNow;
