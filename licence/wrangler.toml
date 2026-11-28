@@ -1,6 +1,6 @@
 name = "maead-licence"
 main = "index.js"
-compatibility_date = "2026-01-01"
+compatibility_date = "2026-11-26"
 
 # Licence server for Maead. Holds licence records and staff accounts only.
 # No patient data ever reaches this server. Secret: ADMIN_KEY (set in the dashboard).
@@ -8,7 +8,7 @@ compatibility_date = "2026-01-01"
 [vars]
 TRIAL_DAYS = "7"
 TRIAL_DAILY_CAP = "30"
-ALLOWED_ORIGINS = "https://maead.pages.dev"
+ALLOWED_ORIGINS = "https://maead.pages.dev,https://saifqotoz74.github.io"
 
 [[d1_databases]]
 binding = "DB"
