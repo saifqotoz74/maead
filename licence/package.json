@@ -1,0 +1,13 @@
+{
+  "name": "maead-licence",
+  "private": true,
+  "version": "2.0.0",
+  "description": "Maead licence server: licences, trials, staff accounts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.168.0"
+  }
+}
