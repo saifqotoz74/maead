@@ -113,3 +113,6 @@ input[type=date]:focus-within{outline:3px solid #8DB9A5;outline-offset:2px}
 .accdlg .actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
 .accdlg .accx{position:absolute;top:8px;left:8px;margin:0}
 .accdlg .err{color:#b4512d;font-size:13px;min-height:18px;margin:10px 0 0}
+
+#accIn[hidden], #accBar[hidden] { display: none !important; }
+.accdlg form[hidden] { display: none !important; }
